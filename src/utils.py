@@ -91,7 +91,8 @@ def split_nodes_delimiter(old_nodes: list, delimiter: str, text_type: str) -> li
                     delim_found = True
                     continue
 
-        # if current_part:
+        # pending part after all delimited words, or,
+        # if there's no delimiter in entire text
         if current_part[:-delimiter_length]:
             parts.append(current_part)
 
