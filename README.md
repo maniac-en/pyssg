@@ -1,1 +1,1 @@
-# maniac-ssg
+# pyssg
