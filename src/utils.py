@@ -1,4 +1,5 @@
 import re
+from typing import List
 from htmlnode import LeafNode
 from textnode import TextNode
 
@@ -59,6 +60,15 @@ def split_nodes_delimiter(old_nodes: list, delimiter: str, text_type: str) -> li
     Raises:
         ValueError: If the markdown syntax in any node is invalid.
         NotImplementedError: If the delimiter is nested within a node's text.
+
+    Example:
+        >>> nodes = [TextNode("This is *italic* and **bold** text", TEXT_TYPE_TEXT)]
+        >>> result = split_nodes_delimiter(nodes, "*", TEXT_TYPE_ITALIC)
+        >>> for node in result:
+        >>>     print(f"text: {node.text}, type: {node.text_type}")
+        text: This is , type: TEXT_TYPE_TEXT
+        text: italic, type: TEXT_TYPE_ITALIC
+        text:  and **bold** text, type: TEXT_TYPE_TEXT
     """
     delimited_nodes = list()
 
@@ -152,3 +162,180 @@ def extract_markdown_links(text: str) -> list[tuple[str, str]]:
         [('link', 'http://example.com')]
     """
     return re.findall(r"\[(.*?)\]\((.*?)\)", text)
+
+
+def split_nodes_image(old_nodes: list) -> list:
+    """
+    Split nodes containing markdown images into separate text and image nodes.
+
+    Args:
+        old_nodes (list): A list of nodes to be split.
+
+    Returns:
+        list: A list of nodes after splitting, including new TextNode objects if necessary.
+
+    Raises:
+        ValueError: If there is an issue with markdown syntax.
+
+    The function processes each node to check if it is an instance of TextNode with text type TEXT_TYPE_TEXT.
+    If it contains markdown images, it splits the text around the images and creates new TextNode objects for
+    each text and image segment.
+
+    Example:
+        >>> nodes = [TextNode("This is text with an ![image](http://example.com/image.jpg)", TEXT_TYPE_TEXT)]
+        >>> split_nodes_image(nodes)
+        [TextNode("This is text with an ", TEXT_TYPE_TEXT), TextNode("image", TEXT_TYPE_IMAGE, "http://example.com/image.jpg")]
+
+        >>> nodes = [TextNode("Here is ![first](http://example.com/1.jpg) and ![second](http://example.com/2.jpg) images", TEXT_TYPE_TEXT)]
+        >>> split_nodes_image(nodes)
+        [TextNode("Here is ", TEXT_TYPE_TEXT), TextNode("first", TEXT_TYPE_IMAGE, "http://example.com/1.jpg"),
+         TextNode(" and ", TEXT_TYPE_TEXT), TextNode("second", TEXT_TYPE_IMAGE, "http://example.com/2.jpg"),
+         TextNode(" images", TEXT_TYPE_TEXT)]
+    """
+    resultant_nodes = list()
+    delimiter = "!"
+    for node in old_nodes:
+        if not isinstance(node, TextNode):
+            resultant_nodes.append(node)
+        elif node.text_type != TEXT_TYPE_TEXT:
+            resultant_nodes.append(node)
+        else:
+            current_text = node.text
+            while True:
+                if current_text and delimiter not in current_text:
+                    resultant_nodes.append(
+                        TextNode(text=current_text, text_type=TEXT_TYPE_TEXT)
+                    )
+                    break
+
+                # first image tuple
+                try:
+                    image_tuple = extract_markdown_images(text=current_text)[0]
+                except IndexError:
+                    raise ValueError("Invalid markdown")
+
+                splits = current_text.split(
+                    f"![{image_tuple[0]}]({image_tuple[1]})", maxsplit=1
+                )
+
+                if splits[0]:
+                    resultant_nodes.append(
+                        TextNode(text=splits[0], text_type=TEXT_TYPE_TEXT)
+                    )
+
+                resultant_nodes.append(
+                    TextNode(
+                        text=image_tuple[0],
+                        text_type=TEXT_TYPE_IMAGE,
+                        url=image_tuple[1],
+                    )
+                )
+
+                if splits[1]:
+                    current_text = splits[1]
+                    continue
+                break
+
+    return resultant_nodes
+
+
+def split_nodes_link(old_nodes: list) -> list:
+    """
+    Split nodes containing markdown links into separate text and link nodes.
+
+    Args:
+        old_nodes (list): A list of nodes to be split.
+
+    Returns:
+        list: A list of nodes after splitting, including new TextNode objects if necessary.
+
+    Raises:
+        ValueError: If there is an issue with markdown syntax.
+
+    The function processes each node to check if it is an instance of TextNode with text type TEXT_TYPE_TEXT.
+    If it contains markdown links, it splits the text around the links and creates new TextNode objects for
+    each text and link segment.
+
+    Example:
+        >>> nodes = [TextNode("This is a [link](http://example.com)", TEXT_TYPE_TEXT)]
+        >>> split_nodes_link(nodes)
+        [TextNode("This is a ", TEXT_TYPE_TEXT), TextNode("link", TEXT_TYPE_LINK, "http://example.com")]
+
+        >>> nodes = [TextNode("Here is [first](http://example.com/1) and [second](http://example.com/2) links", TEXT_TYPE_TEXT)]
+        >>> split_nodes_link(nodes)
+        [TextNode("Here is ", TEXT_TYPE_TEXT), TextNode("first", TEXT_TYPE_LINK, "http://example.com/1"),
+         TextNode(" and ", TEXT_TYPE_TEXT), TextNode("second", TEXT_TYPE_LINK, "http://example.com/2"),
+         TextNode(" links", TEXT_TYPE_TEXT)]
+    """
+    resultant_nodes = list()
+    delimiter = " ["
+    for node in old_nodes:
+        if not isinstance(node, TextNode):
+            resultant_nodes.append(node)
+        elif node.text_type != TEXT_TYPE_TEXT:
+            resultant_nodes.append(node)
+        else:
+            current_text = node.text
+            while True:
+                if current_text and delimiter not in current_text:
+                    resultant_nodes.append(
+                        TextNode(text=current_text, text_type=TEXT_TYPE_TEXT)
+                    )
+                    break
+
+                # first link tuple
+                try:
+                    link_tuple = extract_markdown_links(text=current_text)[0]
+                except IndexError:
+                    raise ValueError("Invalid markdown")
+
+                splits = current_text.split(
+                    f"[{link_tuple[0]}]({link_tuple[1]})", maxsplit=1
+                )
+
+                if splits[0]:
+                    resultant_nodes.append(
+                        TextNode(text=splits[0], text_type=TEXT_TYPE_TEXT)
+                    )
+
+                resultant_nodes.append(
+                    TextNode(
+                        text=link_tuple[0],
+                        text_type=TEXT_TYPE_LINK,
+                        url=link_tuple[1],
+                    )
+                )
+
+                if splits[1]:
+                    current_text = splits[1]
+                    continue
+                break
+
+    return resultant_nodes
+
+
+def convert_markdown_to_nodes(markdown_text: str) -> List[TextNode]:
+    """
+    Convert Markdown text to a list of TextNode objects.
+
+    Args:
+        markdown_text (str): The Markdown text to convert.
+
+    Returns:
+        List[TextNode]: A list of TextNode objects representing the Markdown text.
+
+    Raises:
+        ValueError: If there is an issue with markdown syntax.
+    """
+    text_nodes = [TextNode(text=markdown_text, text_type=TEXT_TYPE_TEXT)]
+
+    try:
+        text_nodes = split_nodes_image(text_nodes)
+        text_nodes = split_nodes_link(text_nodes)
+        text_nodes = split_nodes_delimiter(text_nodes, "**", TEXT_TYPE_BOLD)
+        text_nodes = split_nodes_delimiter(text_nodes, "*", TEXT_TYPE_ITALIC)
+        text_nodes = split_nodes_delimiter(text_nodes, "`", TEXT_TYPE_CODE)
+    except ValueError as e:
+        raise e
+
+    return text_nodes

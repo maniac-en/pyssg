@@ -12,7 +12,10 @@ from utils import (
     extract_markdown_images,
     extract_markdown_links,
     split_nodes_delimiter,
+    split_nodes_image,
+    split_nodes_link,
     text_node_to_html_node,
+    convert_markdown_to_nodes,
 )
 
 
@@ -143,7 +146,7 @@ class TestSplitNodesDelimiter(unittest.TestCase):
             split_nodes_delimiter(nodes, "`", TEXT_TYPE_CODE)
 
 
-class TestExtractMarkdown(unittest.TestCase):
+class TestExtractMarkdownImageLink(unittest.TestCase):
     def test_extract_markdown_images_single(self):
         text = "This is an image ![alt text](http://example.com/image.jpg)."
         expected = [("alt text", "http://example.com/image.jpg")]
@@ -189,6 +192,196 @@ class TestExtractMarkdown(unittest.TestCase):
         text = "Broken [link(http://example.com)."
         expected = []
         self.assertEqual(extract_markdown_links(text), expected)
+
+
+class TestSplitNodeImage(unittest.TestCase):
+    def test_split_node_image_single(self):
+        nodes = [
+            TextNode(
+                "This is text with an ![image](https://example.com/image.jpg)",
+                TEXT_TYPE_TEXT,
+            )
+        ]
+        expected_nodes = [
+            TextNode("This is text with an ", TEXT_TYPE_TEXT),
+            TextNode(
+                "image",
+                TEXT_TYPE_IMAGE,
+                "https://example.com/image.jpg",
+            ),
+        ]
+        self.assertEqual(split_nodes_image(nodes), expected_nodes)
+
+    def test_split_node_image_multiple(self):
+        nodes = [
+            TextNode(
+                "This is an image ![alt text](http://example.com/image.jpg). Here is another ![another image](https://example.org/pic.png).",
+                TEXT_TYPE_TEXT,
+            )
+        ]
+        expected_nodes = [
+            TextNode("This is an image ", TEXT_TYPE_TEXT),
+            TextNode(
+                "alt text",
+                TEXT_TYPE_IMAGE,
+                "http://example.com/image.jpg",
+            ),
+            TextNode(". Here is another ", TEXT_TYPE_TEXT),
+            TextNode(
+                "another image",
+                TEXT_TYPE_IMAGE,
+                "https://example.org/pic.png",
+            ),
+            TextNode(".", TEXT_TYPE_TEXT),
+        ]
+        self.assertEqual(split_nodes_image(nodes), expected_nodes)
+
+    def test_split_node_image_none(self):
+        nodes = [
+            TextNode(
+                "This is text without any images.",
+                TEXT_TYPE_TEXT,
+            )
+        ]
+        expected_nodes = [
+            TextNode("This is text without any images.", TEXT_TYPE_TEXT),
+        ]
+        self.assertEqual(split_nodes_image(nodes), expected_nodes)
+
+    def test_split_node_image_non_text_type(self):
+        nodes = [TextNode("This should not be split", TEXT_TYPE_BOLD)]
+        expected_nodes = [TextNode("This should not be split", TEXT_TYPE_BOLD)]
+        self.assertEqual(split_nodes_image(nodes), expected_nodes)
+
+    def test_split_node_image_text_type(self):
+        nodes = [
+            TextNode(
+                "This is an image ![alt text](http://example.com/image.jpg).",
+                TEXT_TYPE_TEXT,
+            )
+        ]
+        expected_nodes = [
+            TextNode("This is an image ", TEXT_TYPE_TEXT),
+            TextNode("alt text", TEXT_TYPE_IMAGE, "http://example.com/image.jpg"),
+            TextNode(".", TEXT_TYPE_TEXT),
+        ]
+        self.assertEqual(split_nodes_image(nodes), expected_nodes)
+
+    def test_split_node_image_broken(self):
+        nodes = [
+            TextNode(
+                "This is an image with a broken ![alt text](http://example.com/image.jpg link.",
+                TEXT_TYPE_TEXT,
+            )
+        ]
+        with self.assertRaises(ValueError):
+            split_nodes_image(nodes)
+
+
+class TestSplitNodeLink(unittest.TestCase):
+    def test_split_node_link_single(self):
+        nodes = [
+            TextNode(
+                "This is a [link](https://example.com)",
+                TEXT_TYPE_TEXT,
+            )
+        ]
+        expected_nodes = [
+            TextNode("This is a ", TEXT_TYPE_TEXT),
+            TextNode(
+                "link",
+                TEXT_TYPE_LINK,
+                "https://example.com",
+            ),
+        ]
+        self.assertEqual(split_nodes_link(nodes), expected_nodes)
+
+    def test_split_node_link_multiple(self):
+        nodes = [
+            TextNode(
+                "This is a [link](http://example.com). Here is another [another link](https://example.org).",
+                TEXT_TYPE_TEXT,
+            )
+        ]
+        expected_nodes = [
+            TextNode("This is a ", TEXT_TYPE_TEXT),
+            TextNode(
+                "link",
+                TEXT_TYPE_LINK,
+                "http://example.com",
+            ),
+            TextNode(". Here is another ", TEXT_TYPE_TEXT),
+            TextNode(
+                "another link",
+                TEXT_TYPE_LINK,
+                "https://example.org",
+            ),
+            TextNode(".", TEXT_TYPE_TEXT),
+        ]
+        self.assertEqual(split_nodes_link(nodes), expected_nodes)
+
+    def test_split_node_link_none(self):
+        nodes = [
+            TextNode(
+                "This is text without any links.",
+                TEXT_TYPE_TEXT,
+            )
+        ]
+        expected_nodes = [
+            TextNode("This is text without any links.", TEXT_TYPE_TEXT),
+        ]
+        self.assertEqual(split_nodes_link(nodes), expected_nodes)
+
+    def test_split_node_link_non_text_type(self):
+        nodes = [TextNode("This should not be split", TEXT_TYPE_BOLD)]
+        expected_nodes = [TextNode("This should not be split", TEXT_TYPE_BOLD)]
+        self.assertEqual(split_nodes_link(nodes), expected_nodes)
+
+    def test_split_node_link_text_type(self):
+        nodes = [TextNode("This is a [link](http://example.com).", TEXT_TYPE_TEXT)]
+        expected_nodes = [
+            TextNode("This is a ", TEXT_TYPE_TEXT),
+            TextNode("link", TEXT_TYPE_LINK, "http://example.com"),
+            TextNode(".", TEXT_TYPE_TEXT),
+        ]
+        self.assertEqual(split_nodes_link(nodes), expected_nodes)
+
+    def test_split_node_link_broken(self):
+        nodes = [
+            TextNode(
+                "This is a [link](http://example.com text with a broken link.",
+                TEXT_TYPE_TEXT,
+            )
+        ]
+        with self.assertRaises(ValueError):
+            split_nodes_link(nodes)
+
+
+class TestConvertMarkdownToNodes(unittest.TestCase):
+    def test_convert_markdown_to_nodes_basic(self):
+        text = """This is **text** with an *italic* word and a `code block` and an ![image](https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/zjjcJKZ.png) and a [link](https://boot.dev)"""
+        expected_nodes = [
+            TextNode("This is ", TEXT_TYPE_TEXT),
+            TextNode("text", TEXT_TYPE_BOLD),
+            TextNode(" with an ", TEXT_TYPE_TEXT),
+            TextNode("italic", TEXT_TYPE_ITALIC),
+            TextNode(" word and a ", TEXT_TYPE_TEXT),
+            TextNode("code block", TEXT_TYPE_CODE),
+            TextNode(" and an ", TEXT_TYPE_TEXT),
+            TextNode(
+                "image",
+                TEXT_TYPE_IMAGE,
+                "https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/zjjcJKZ.png",
+            ),
+            TextNode(" and a ", TEXT_TYPE_TEXT),
+            TextNode("link", TEXT_TYPE_LINK, "https://boot.dev"),
+        ]
+        self.assertEqual(convert_markdown_to_nodes(text), expected_nodes)
+
+    def test_convert_markdown_to_nodes_invalid_markdown(self):
+        text = "This is a [broken link](http://example.com."
+        with self.assertRaises(ValueError):
+            convert_markdown_to_nodes(text)
 
 
 if __name__ == "__main__":

@@ -1,7 +1,5 @@
 from typing import Optional
 
-from htmlnode import LeafNode
-
 
 class TextNode:
     """
