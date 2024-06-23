@@ -1,3 +1,4 @@
+import re
 from htmlnode import LeafNode
 from textnode import TextNode
 
@@ -117,3 +118,37 @@ def split_nodes_delimiter(old_nodes: list, delimiter: str, text_type: str) -> li
                     delimited_nodes.append(TextNode(part, TEXT_TYPE_TEXT))
 
     return delimited_nodes
+
+
+def extract_markdown_images(text: str) -> list[tuple[str, str]]:
+    """
+    Extract all markdown image references from a given text.
+
+    Args:
+        text (str): The input text containing markdown image references.
+
+    Returns:
+        list[tuple[str, str]]: A list of tuples where each tuple contains the alt text and the URL of an image.
+
+    Example:
+        >>> extract_markdown_images("This is an image ![alt text](http://example.com/image.jpg).")
+        [('alt text', 'http://example.com/image.jpg')]
+    """
+    return re.findall(r"!\[(.*?)\]\((.*?)\)", text)
+
+
+def extract_markdown_links(text: str) -> list[tuple[str, str]]:
+    """
+    Extract all markdown links from a given text.
+
+    Args:
+        text (str): The input text containing markdown links.
+
+    Returns:
+        list[tuple[str, str]]: A list of tuples where each tuple contains the link text and the URL.
+
+    Example:
+        >>> extract_markdown_links("This is a [link](http://example.com).")
+        [('link', 'http://example.com')]
+    """
+    return re.findall(r"\[(.*?)\]\((.*?)\)", text)

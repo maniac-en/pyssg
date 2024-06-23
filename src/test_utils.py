@@ -1,15 +1,18 @@
 import unittest
+
 from htmlnode import LeafNode
 from textnode import TextNode
 from utils import (
-    text_node_to_html_node,
-    split_nodes_delimiter,
-    TEXT_TYPE_TEXT,
     TEXT_TYPE_BOLD,
-    TEXT_TYPE_ITALIC,
     TEXT_TYPE_CODE,
-    TEXT_TYPE_LINK,
     TEXT_TYPE_IMAGE,
+    TEXT_TYPE_ITALIC,
+    TEXT_TYPE_LINK,
+    TEXT_TYPE_TEXT,
+    extract_markdown_images,
+    extract_markdown_links,
+    split_nodes_delimiter,
+    text_node_to_html_node,
 )
 
 
@@ -138,6 +141,54 @@ class TestSplitNodesDelimiter(unittest.TestCase):
         nodes = [TextNode(text="Hello `code World", text_type=TEXT_TYPE_TEXT)]
         with self.assertRaises(ValueError):
             split_nodes_delimiter(nodes, "`", TEXT_TYPE_CODE)
+
+
+class TestExtractMarkdown(unittest.TestCase):
+    def test_extract_markdown_images_single(self):
+        text = "This is an image ![alt text](http://example.com/image.jpg)."
+        expected = [("alt text", "http://example.com/image.jpg")]
+        self.assertEqual(extract_markdown_images(text), expected)
+
+    def test_extract_markdown_images_multiple(self):
+        text = "This is an image ![alt text](http://example.com/image.jpg). Here is another ![another image](https://example.org/pic.png)."
+        expected = [
+            ("alt text", "http://example.com/image.jpg"),
+            ("another image", "https://example.org/pic.png"),
+        ]
+        self.assertEqual(extract_markdown_images(text), expected)
+
+    def test_extract_markdown_images_none(self):
+        text = "No images here!"
+        expected = []
+        self.assertEqual(extract_markdown_images(text), expected)
+
+    def test_extract_markdown_images_broken(self):
+        text = "Broken ![alt text(http://example.com/image.jpg)."
+        expected = []
+        self.assertEqual(extract_markdown_images(text), expected)
+
+    def test_extract_markdown_links_single(self):
+        text = "This is a [link](http://example.com)."
+        expected = [("link", "http://example.com")]
+        self.assertEqual(extract_markdown_links(text), expected)
+
+    def test_extract_markdown_links_multiple(self):
+        text = "This is a [link](http://example.com). Here is another [another link](https://example.org)."
+        expected = [
+            ("link", "http://example.com"),
+            ("another link", "https://example.org"),
+        ]
+        self.assertEqual(extract_markdown_links(text), expected)
+
+    def test_extract_markdown_links_none(self):
+        text = "No links here!"
+        expected = []
+        self.assertEqual(extract_markdown_links(text), expected)
+
+    def test_extract_markdown_links_broken(self):
+        text = "Broken [link(http://example.com)."
+        expected = []
+        self.assertEqual(extract_markdown_links(text), expected)
 
 
 if __name__ == "__main__":
