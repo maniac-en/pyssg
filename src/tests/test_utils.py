@@ -1,22 +1,8 @@
 import unittest
 
-from htmlnode import LeafNode
-from textnode import TextNode
-from utils import (
-    TEXT_TYPE_BOLD,
-    TEXT_TYPE_CODE,
-    TEXT_TYPE_IMAGE,
-    TEXT_TYPE_ITALIC,
-    TEXT_TYPE_LINK,
-    TEXT_TYPE_TEXT,
-    extract_markdown_images,
-    extract_markdown_links,
-    split_nodes_delimiter,
-    split_nodes_image,
-    split_nodes_link,
-    text_node_to_html_node,
-    convert_markdown_to_nodes,
-)
+from src.core.htmlnode import LeafNode
+from src.core.textnode import TextNode
+from src.core.utils import *
 
 
 class TestTextNodeToHtmlNode(unittest.TestCase):
@@ -376,12 +362,12 @@ class TestConvertMarkdownToNodes(unittest.TestCase):
             TextNode(" and a ", TEXT_TYPE_TEXT),
             TextNode("link", TEXT_TYPE_LINK, "https://boot.dev"),
         ]
-        self.assertEqual(convert_markdown_to_nodes(text), expected_nodes)
+        self.assertEqual(convert_inline_markdown_to_nodes(text), expected_nodes)
 
     def test_convert_markdown_to_nodes_invalid_markdown(self):
         text = "This is a [broken link](http://example.com."
         with self.assertRaises(ValueError):
-            convert_markdown_to_nodes(text)
+            convert_inline_markdown_to_nodes(text)
 
 
 if __name__ == "__main__":

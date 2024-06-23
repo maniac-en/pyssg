@@ -1,7 +1,7 @@
 import re
-from typing import List
-from htmlnode import LeafNode
-from textnode import TextNode
+from typing import List, Tuple
+from src.core.htmlnode import LeafNode
+from src.core.textnode import TextNode
 
 TEXT_TYPE_TEXT = "text"
 TEXT_TYPE_BOLD = "bold"
@@ -45,17 +45,19 @@ def text_node_to_html_node(text_node: TextNode) -> LeafNode:
         )
 
 
-def split_nodes_delimiter(old_nodes: list, delimiter: str, text_type: str) -> list:
+def split_nodes_delimiter(
+    old_nodes: List[TextNode], delimiter: str, text_type: str
+) -> List[TextNode]:
     """
-    Split a list of nodes based on a delimiter in their text content.
+    Split a list of TextNode objects based on a delimiter in their text content.
 
     Args:
-        old_nodes (list): A list of nodes to be split.
+        old_nodes (List[TextNode]): A list of TextNode objects to be split.
         delimiter (str): The delimiter to split the nodes on.
         text_type (str): The text type to assign to new TextNode objects.
 
     Returns:
-        list: A list of nodes after splitting, including new TextNode objects if necessary.
+        List[TextNode]: A list of TextNode objects after splitting, including new TextNode objects if necessary.
 
     Raises:
         ValueError: If the markdown syntax in any node is invalid.
@@ -130,7 +132,7 @@ def split_nodes_delimiter(old_nodes: list, delimiter: str, text_type: str) -> li
     return delimited_nodes
 
 
-def extract_markdown_images(text: str) -> list[tuple[str, str]]:
+def extract_markdown_images(text: str) -> List[Tuple[str, str]]:
     """
     Extract all markdown image references from a given text.
 
@@ -138,7 +140,7 @@ def extract_markdown_images(text: str) -> list[tuple[str, str]]:
         text (str): The input text containing markdown image references.
 
     Returns:
-        list[tuple[str, str]]: A list of tuples where each tuple contains the alt text and the URL of an image.
+        List[Tuple[str, str]]: A list of tuples where each tuple contains the alt text and the URL of an image.
 
     Example:
         >>> extract_markdown_images("This is an image ![alt text](http://example.com/image.jpg).")
@@ -147,7 +149,7 @@ def extract_markdown_images(text: str) -> list[tuple[str, str]]:
     return re.findall(r"!\[(.*?)\]\((.*?)\)", text)
 
 
-def extract_markdown_links(text: str) -> list[tuple[str, str]]:
+def extract_markdown_links(text: str) -> List[Tuple[str, str]]:
     """
     Extract all markdown links from a given text.
 
@@ -155,7 +157,7 @@ def extract_markdown_links(text: str) -> list[tuple[str, str]]:
         text (str): The input text containing markdown links.
 
     Returns:
-        list[tuple[str, str]]: A list of tuples where each tuple contains the link text and the URL.
+        List[Tuple[str, str]]: A list of tuples where each tuple contains the link text and the URL.
 
     Example:
         >>> extract_markdown_links("This is a [link](http://example.com).")
@@ -164,15 +166,15 @@ def extract_markdown_links(text: str) -> list[tuple[str, str]]:
     return re.findall(r"\[(.*?)\]\((.*?)\)", text)
 
 
-def split_nodes_image(old_nodes: list) -> list:
+def split_nodes_image(old_nodes: List[TextNode]) -> List[TextNode]:
     """
     Split nodes containing markdown images into separate text and image nodes.
 
     Args:
-        old_nodes (list): A list of nodes to be split.
+        old_nodes (List[TextNode]): A list of nodes to be split.
 
     Returns:
-        list: A list of nodes after splitting, including new TextNode objects if necessary.
+        List[TextNode]: A list of TextNode objects including new TextNode objects if necessary.
 
     Raises:
         ValueError: If there is an issue with markdown syntax.
@@ -239,15 +241,15 @@ def split_nodes_image(old_nodes: list) -> list:
     return resultant_nodes
 
 
-def split_nodes_link(old_nodes: list) -> list:
+def split_nodes_link(old_nodes: List[TextNode]) -> List[TextNode]:
     """
     Split nodes containing markdown links into separate text and link nodes.
 
     Args:
-        old_nodes (list): A list of nodes to be split.
+        old_nodes (List[TextNode]): A list of nodes to be split.
 
     Returns:
-        list: A list of nodes after splitting, including new TextNode objects if necessary.
+        List[TextNode]: A list of TextNode objects including new TextNode objects if necessary.
 
     Raises:
         ValueError: If there is an issue with markdown syntax.
@@ -314,7 +316,7 @@ def split_nodes_link(old_nodes: list) -> list:
     return resultant_nodes
 
 
-def convert_markdown_to_nodes(markdown_text: str) -> List[TextNode]:
+def convert_inline_markdown_to_nodes(markdown_text: str) -> List[TextNode]:
     """
     Convert Markdown text to a list of TextNode objects.
 

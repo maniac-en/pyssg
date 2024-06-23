@@ -1,6 +1,6 @@
 import unittest
 from typing import Dict, List, Optional
-from htmlnode import HTMLNode, LeafNode, ParentNode
+from src.core.htmlnode import HTMLNode, LeafNode, ParentNode
 
 
 class TestHTMLNodeInitialization(unittest.TestCase):

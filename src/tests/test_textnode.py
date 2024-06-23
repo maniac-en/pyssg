@@ -1,6 +1,6 @@
 import unittest
 from typing import Optional
-from textnode import TextNode
+from src.core.textnode import TextNode
 
 
 class TestTextNodeInitialization(unittest.TestCase):
