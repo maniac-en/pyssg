@@ -9,6 +9,12 @@ TEXT_TYPE_ITALIC = "italic"
 TEXT_TYPE_CODE = "code"
 TEXT_TYPE_LINK = "link"
 TEXT_TYPE_IMAGE = "image"
+BLOCK_TYPE_PARAGRAPH = "paragraph"
+BLOCK_TYPE_HEADING = "heading"
+BLOCK_TYPE_CODE = "code"
+BLOCK_TYPE_QUOTE = "quote"
+BLOCK_TYPE_UNORD_LIST = "unordered_list"
+BLOCK_TYPE_ORD_LIST = "ordered_list"
 
 
 def text_node_to_html_node(text_node: TextNode) -> LeafNode:
@@ -316,7 +322,7 @@ def split_nodes_link(old_nodes: List[TextNode]) -> List[TextNode]:
     return resultant_nodes
 
 
-def convert_inline_markdown_to_nodes(markdown_text: str) -> List[TextNode]:
+def convert_markdown_block_to_nodes(text: str) -> List[TextNode]:
     """
     Convert Markdown text to a list of TextNode objects.
 
@@ -329,7 +335,7 @@ def convert_inline_markdown_to_nodes(markdown_text: str) -> List[TextNode]:
     Raises:
         ValueError: If there is an issue with markdown syntax.
     """
-    text_nodes = [TextNode(text=markdown_text, text_type=TEXT_TYPE_TEXT)]
+    text_nodes = [TextNode(text=text, text_type=TEXT_TYPE_TEXT)]
 
     try:
         text_nodes = split_nodes_image(text_nodes)
@@ -341,3 +347,88 @@ def convert_inline_markdown_to_nodes(markdown_text: str) -> List[TextNode]:
         raise e
 
     return text_nodes
+
+
+def convert_markdown_to_block(text: str) -> List[str]:
+    """
+    Convert a raw Markdown string into a list of block strings.
+
+    This function splits the input Markdown string into distinct blocks, where each
+    block is separated by one or more newlines. It strips any leading or trailing
+    whitespace from each block and removes any empty blocks created by excessive newlines.
+
+    Parameters:
+    text (str): The raw Markdown string representing a full document.
+
+    Returns:
+    List[str]: A list of block strings, with leading and trailing whitespace removed.
+    """
+    lines = text.split("\n")
+    blocks = []
+    current_block = []
+
+    def add_block():
+        if current_block:
+            blocks.append("\n".join(current_block).strip())
+            current_block.clear()
+
+    for line in lines:
+        stripped_line = line.strip()
+        if not stripped_line:
+            add_block()
+        else:
+            current_block.append(stripped_line)
+
+    add_block()  # Add the last block if there's any
+
+    return blocks
+
+
+def get_block_type(block: str) -> str:
+    """
+    Determine the type of a Markdown block.
+
+    This function takes a block of Markdown text and returns its type based on
+    predefined constants for various Markdown block elements (e.g., heading, code, quote, lists).
+
+    Parameters:
+    block (str): A string representing a single block of Markdown text.
+
+    Returns:
+    str: A string representing the type of the Markdown block, which can be one of the following:
+         - "heading"
+         - "code"
+         - "quote"
+         - "unordered_list"
+         - "ordered_list"
+         - "paragraph"
+
+    Examples:
+    >>> block_to_block_type("# Heading")
+    'heading'
+    >>> block_to_block_type("```code block```")
+    'code'
+    >>> block_to_block_type("> Quote")
+    'quote'
+    >>> block_to_block_type("* Unordered list item")
+    'unordered_list'
+    >>> block_to_block_type("1. Ordered list item")
+    'ordered_list'
+    >>> block_to_block_type("Just a paragraph.")
+    'paragraph'
+    """
+    if re.match(r"^#{1,6}\s", block):
+        return BLOCK_TYPE_HEADING
+    elif block.startswith("```") and block.endswith("```"):
+        return BLOCK_TYPE_CODE
+    elif all(line.startswith(">") for line in block.split("\n")):
+        return BLOCK_TYPE_QUOTE
+    elif all(re.match(r"^[*-]\s", line) for line in block.split("\n")):
+        return BLOCK_TYPE_UNORD_LIST
+    elif all(re.match(r"^\d+\.\s", line) for line in block.split("\n")):
+        lines = block.split("\n")
+        for i, line in enumerate(lines):
+            if int(line.split(".")[0]) != i + 1:
+                return BLOCK_TYPE_PARAGRAPH
+        return BLOCK_TYPE_ORD_LIST
+    return BLOCK_TYPE_PARAGRAPH

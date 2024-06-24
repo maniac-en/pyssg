@@ -343,31 +343,107 @@ class TestSplitNodeLink(unittest.TestCase):
             split_nodes_link(nodes)
 
 
-class TestConvertMarkdownToNodes(unittest.TestCase):
-    def test_convert_markdown_to_nodes_basic(self):
-        text = """This is **text** with an *italic* word and a `code block` and an ![image](https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/zjjcJKZ.png) and a [link](https://boot.dev)"""
-        expected_nodes = [
-            TextNode("This is ", TEXT_TYPE_TEXT),
-            TextNode("text", TEXT_TYPE_BOLD),
-            TextNode(" with an ", TEXT_TYPE_TEXT),
-            TextNode("italic", TEXT_TYPE_ITALIC),
-            TextNode(" word and a ", TEXT_TYPE_TEXT),
-            TextNode("code block", TEXT_TYPE_CODE),
-            TextNode(" and an ", TEXT_TYPE_TEXT),
-            TextNode(
-                "image",
-                TEXT_TYPE_IMAGE,
-                "https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/zjjcJKZ.png",
-            ),
-            TextNode(" and a ", TEXT_TYPE_TEXT),
-            TextNode("link", TEXT_TYPE_LINK, "https://boot.dev"),
-        ]
-        self.assertEqual(convert_inline_markdown_to_nodes(text), expected_nodes)
+class TestConvertMarkdown(unittest.TestCase):
+    def test_convert_markdown_to_block_single_paragraph(self):
+        text = "This is a paragraph."
+        expected = ["This is a paragraph."]
+        self.assertEqual(convert_markdown_to_block(text), expected)
 
-    def test_convert_markdown_to_nodes_invalid_markdown(self):
-        text = "This is a [broken link](http://example.com."
-        with self.assertRaises(ValueError):
-            convert_inline_markdown_to_nodes(text)
+    def test_convert_markdown_to_block_multiple_paragraphs(self):
+        text = """
+        This is a paragraph.
+
+        This is another paragraph.
+        """
+        expected = ["This is a paragraph.", "This is another paragraph."]
+        self.assertEqual(convert_markdown_to_block(text), expected)
+
+    def test_convert_markdown_to_block_list_items(self):
+        text = """
+        * Item 1
+        * Item 2
+        """
+        expected = ["* Item 1\n* Item 2"]
+        self.assertEqual(convert_markdown_to_block(text), expected)
+
+    def test_convert_markdown_to_block_mixed_content(self):
+        text = """
+        This is **bolded** paragraph
+
+        This is another paragraph with *italic* text and `code` here
+        This is the same paragraph on a new line
+
+        * This is a list
+        * with items
+
+        1. This is also a list
+        2. with items
+        """
+        expected = [
+            "This is **bolded** paragraph",
+            "This is another paragraph with *italic* text and `code` here\nThis is the same paragraph on a new line",
+            "* This is a list\n* with items",
+            "1. This is also a list\n2. with items",
+        ]
+        self.assertEqual(convert_markdown_to_block(text), expected)
+
+    def test_convert_markdown_to_block_empty_input(self):
+        text = ""
+        expected = []
+        self.assertEqual(convert_markdown_to_block(text), expected)
+
+    def test_convert_markdown_to_block_only_newlines(self):
+        text = "\n\n\n"
+        expected = []
+        self.assertEqual(convert_markdown_to_block(text), expected)
+
+
+class TestBlockToBlockType(unittest.TestCase):
+    def test_get_block_type_heading(self):
+        self.assertEqual(get_block_type("# Heading"), BLOCK_TYPE_HEADING)
+        self.assertEqual(get_block_type("## Subheading"), BLOCK_TYPE_HEADING)
+        self.assertEqual(get_block_type("###### Small heading"), BLOCK_TYPE_HEADING)
+
+    def test_get_block_type_code(self):
+        self.assertEqual(get_block_type("```code block```"), BLOCK_TYPE_CODE)
+        self.assertEqual(
+            get_block_type("```\nprint('Hello, world!')\n```"), BLOCK_TYPE_CODE
+        )
+
+    def test_get_block_type_quote(self):
+        self.assertEqual(get_block_type("> This is a quote"), BLOCK_TYPE_QUOTE)
+        self.assertEqual(
+            get_block_type("> This is a quote\n> with multiple lines"), BLOCK_TYPE_QUOTE
+        )
+
+    def test_get_block_type_unordered_list(self):
+        self.assertEqual(get_block_type("* Unordered list item"), BLOCK_TYPE_UNORD_LIST)
+        self.assertEqual(
+            get_block_type("- Another unordered list item"), BLOCK_TYPE_UNORD_LIST
+        )
+        self.assertEqual(
+            get_block_type("* List item\n* Another list item"), BLOCK_TYPE_UNORD_LIST
+        )
+
+    def test_get_block_type_ordered_list(self):
+        self.assertEqual(get_block_type("1. Ordered list item"), BLOCK_TYPE_ORD_LIST)
+        self.assertEqual(
+            get_block_type("1. First item\n2. Second item\n3. Third item"),
+            BLOCK_TYPE_ORD_LIST,
+        )
+
+    def test_get_block_type_paragraph(self):
+        self.assertEqual(get_block_type("Just a paragraph."), BLOCK_TYPE_PARAGRAPH)
+        self.assertEqual(
+            get_block_type("This is a **bold** text."), BLOCK_TYPE_PARAGRAPH
+        )
+        self.assertEqual(get_block_type("#Heading without space"), BLOCK_TYPE_PARAGRAPH)
+
+    def test_get_block_type_invalid_ordered_list(self):
+        self.assertEqual(get_block_type("1 Not an ordered list"), BLOCK_TYPE_PARAGRAPH)
+        self.assertEqual(
+            get_block_type("1. First item\n3. Third item"), BLOCK_TYPE_PARAGRAPH
+        )
 
 
 if __name__ == "__main__":
