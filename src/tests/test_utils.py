@@ -439,6 +439,21 @@ class TestBlockToBlockType(unittest.TestCase):
         )
         self.assertEqual(get_block_type("#Heading without space"), BLOCK_TYPE_PARAGRAPH)
 
+    def test_get_block_type_invalid_heading(self):
+        self.assertEqual(
+            get_block_type("####### Invalid heading"), BLOCK_TYPE_PARAGRAPH
+        )
+
+    def test_get_block_type_invalid_quote(self):
+        self.assertEqual(
+            get_block_type("> line 1\nline without >\n> line 2"), BLOCK_TYPE_PARAGRAPH
+        )
+
+    def test_get_block_type_invalid_unordered_list(self):
+        self.assertEqual(
+            get_block_type("* line 1\nline without *\n* line 2"), BLOCK_TYPE_PARAGRAPH
+        )
+
     def test_get_block_type_invalid_ordered_list(self):
         self.assertEqual(get_block_type("1 Not an ordered list"), BLOCK_TYPE_PARAGRAPH)
         self.assertEqual(
