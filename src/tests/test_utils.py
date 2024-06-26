@@ -1,5 +1,10 @@
 import unittest
 
+# import sys
+# import os
+#
+# sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/.." + "/../")
+
 from src.core.htmlnode import LeafNode
 from src.core.textnode import TextNode
 from src.core.utils import *
@@ -109,6 +114,13 @@ class TestSplitNodesDelimiter(unittest.TestCase):
         ]
         with self.assertRaises(NotImplementedError):
             split_nodes_delimiter(nodes, "*", TEXT_TYPE_ITALIC)
+
+    def test_split_nodes_with_only_delimited_word(self):
+        nodes = [TextNode(text="*italic word*", text_type=TEXT_TYPE_TEXT)]
+        expected_nodes = [TextNode(text="italic word", text_type=TEXT_TYPE_ITALIC)]
+        self.assertEqual(
+            split_nodes_delimiter(nodes, "*", TEXT_TYPE_ITALIC), expected_nodes
+        )
 
     def test_split_nodes_with_nested_bold_delimiters(self):
         nodes = [
@@ -343,11 +355,91 @@ class TestSplitNodeLink(unittest.TestCase):
             split_nodes_link(nodes)
 
 
-class TestConvertMarkdown(unittest.TestCase):
+class TestMarkdownLineToNodes(unittest.TestCase):
+    def test_markdown_line_to_node_plain_text(self):
+        text = "This is a plain text."
+        expected = [TextNode(text="This is a plain text.", text_type=TEXT_TYPE_TEXT)]
+        self.assertEqual(markdown_line_to_nodes(text), expected)
+
+    def test_markdown_line_to_node_bold_text(self):
+        text = "This is **bold** text."
+        expected = [
+            TextNode(text="This is ", text_type=TEXT_TYPE_TEXT),
+            TextNode(text="bold", text_type=TEXT_TYPE_BOLD),
+            TextNode(text=" text.", text_type=TEXT_TYPE_TEXT),
+        ]
+        self.assertEqual(markdown_line_to_nodes(text), expected)
+
+    def test_markdown_line_to_node_italic_text(self):
+        text = "This is *italic* text."
+        expected = [
+            TextNode(text="This is ", text_type=TEXT_TYPE_TEXT),
+            TextNode(text="italic", text_type=TEXT_TYPE_ITALIC),
+            TextNode(text=" text.", text_type=TEXT_TYPE_TEXT),
+        ]
+        self.assertEqual(markdown_line_to_nodes(text), expected)
+
+    def test_markdown_line_to_node_code_text(self):
+        text = "This is `code` text."
+        expected = [
+            TextNode(text="This is ", text_type=TEXT_TYPE_TEXT),
+            TextNode(text="code", text_type=TEXT_TYPE_CODE),
+            TextNode(text=" text.", text_type=TEXT_TYPE_TEXT),
+        ]
+        self.assertEqual(markdown_line_to_nodes(text), expected)
+
+    def test_markdown_line_to_node_image_text(self):
+        text = "This is an ![image](http://example.com/image.jpg)."
+        expected = [
+            TextNode(text="This is an ", text_type=TEXT_TYPE_TEXT),
+            TextNode(
+                text="image",
+                text_type=TEXT_TYPE_IMAGE,
+                url="http://example.com/image.jpg",
+            ),
+            TextNode(text=".", text_type=TEXT_TYPE_TEXT),
+        ]
+        self.assertEqual(markdown_line_to_nodes(text), expected)
+
+    def test_markdown_line_to_node_link_text(self):
+        text = "This is a [link](http://example.com)."
+        expected = [
+            TextNode(text="This is a ", text_type=TEXT_TYPE_TEXT),
+            TextNode(text="link", text_type=TEXT_TYPE_LINK, url="http://example.com"),
+            TextNode(text=".", text_type=TEXT_TYPE_TEXT),
+        ]
+        self.assertEqual(markdown_line_to_nodes(text), expected)
+
+    def test_markdown_line_to_node_combined_markdown(self):
+        text = "This is **bold** and *italic* with a [link](http://example.com) and an ![image](http://example.com/image.jpg)."
+        expected = [
+            TextNode(text="This is ", text_type=TEXT_TYPE_TEXT),
+            TextNode(text="bold", text_type=TEXT_TYPE_BOLD),
+            TextNode(text=" and ", text_type=TEXT_TYPE_TEXT),
+            TextNode(text="italic", text_type=TEXT_TYPE_ITALIC),
+            TextNode(text=" with a ", text_type=TEXT_TYPE_TEXT),
+            TextNode(text="link", text_type=TEXT_TYPE_LINK, url="http://example.com"),
+            TextNode(text=" and an ", text_type=TEXT_TYPE_TEXT),
+            TextNode(
+                text="image",
+                text_type=TEXT_TYPE_IMAGE,
+                url="http://example.com/image.jpg",
+            ),
+            TextNode(text=".", text_type=TEXT_TYPE_TEXT),
+        ]
+        self.assertEqual(markdown_line_to_nodes(text), expected)
+
+    def test_markdown_line_to_node_invalid_syntax(self):
+        text = "This is **invalid markdown*."
+        with self.assertRaises(ValueError):
+            markdown_line_to_nodes(text)
+
+
+class TestConvertMarkdownToBlock(unittest.TestCase):
     def test_convert_markdown_to_block_single_paragraph(self):
         text = "This is a paragraph."
         expected = ["This is a paragraph."]
-        self.assertEqual(convert_markdown_to_block(text), expected)
+        self.assertEqual(markdown_to_blocks(text), expected)
 
     def test_convert_markdown_to_block_multiple_paragraphs(self):
         text = """
@@ -356,7 +448,7 @@ class TestConvertMarkdown(unittest.TestCase):
         This is another paragraph.
         """
         expected = ["This is a paragraph.", "This is another paragraph."]
-        self.assertEqual(convert_markdown_to_block(text), expected)
+        self.assertEqual(markdown_to_blocks(text), expected)
 
     def test_convert_markdown_to_block_list_items(self):
         text = """
@@ -364,7 +456,7 @@ class TestConvertMarkdown(unittest.TestCase):
         * Item 2
         """
         expected = ["* Item 1\n* Item 2"]
-        self.assertEqual(convert_markdown_to_block(text), expected)
+        self.assertEqual(markdown_to_blocks(text), expected)
 
     def test_convert_markdown_to_block_mixed_content(self):
         text = """
@@ -385,17 +477,17 @@ class TestConvertMarkdown(unittest.TestCase):
             "* This is a list\n* with items",
             "1. This is also a list\n2. with items",
         ]
-        self.assertEqual(convert_markdown_to_block(text), expected)
+        self.assertEqual(markdown_to_blocks(text), expected)
 
     def test_convert_markdown_to_block_empty_input(self):
         text = ""
         expected = []
-        self.assertEqual(convert_markdown_to_block(text), expected)
+        self.assertEqual(markdown_to_blocks(text), expected)
 
     def test_convert_markdown_to_block_only_newlines(self):
         text = "\n\n\n"
         expected = []
-        self.assertEqual(convert_markdown_to_block(text), expected)
+        self.assertEqual(markdown_to_blocks(text), expected)
 
 
 class TestBlockToBlockType(unittest.TestCase):
@@ -459,6 +551,135 @@ class TestBlockToBlockType(unittest.TestCase):
         self.assertEqual(
             get_block_type("1. First item\n3. Third item"), BLOCK_TYPE_PARAGRAPH
         )
+
+
+class TestMarkdownToTextNode(unittest.TestCase):
+    def test_markdown_paragraph_to_text_node_single_line(self):
+        text = "This is **bolded** paragraph"
+        expected_nodes = [
+            TextNode("This is ", TEXT_TYPE_TEXT),
+            TextNode("bolded", TEXT_TYPE_BOLD),
+            TextNode(" paragraph", TEXT_TYPE_TEXT),
+        ]
+        self.assertEqual(markdown_paragraph_to_text_node(text=text), expected_nodes)
+
+    def test_markdown_paragraph_to_text_node_multi_line(self):
+        text = """\
+This is another paragraph with *italic* text and `code` here
+This is the same paragraph on a new line\
+"""
+        expected_nodes = [
+            TextNode("This is another paragraph with ", TEXT_TYPE_TEXT),
+            TextNode("italic", TEXT_TYPE_ITALIC),
+            TextNode(" text and ", TEXT_TYPE_TEXT),
+            TextNode("code", TEXT_TYPE_CODE),
+            TextNode(" here\nThis is the same paragraph on a new line", TEXT_TYPE_TEXT),
+        ]
+        self.assertEqual(markdown_paragraph_to_text_node(text=text), expected_nodes)
+
+    def test_markdown_heading_to_text_node_plain_h1(self):
+        text = "# heading1"
+        expected_nodes = [TextNode("heading1", TEXT_TYPE_TEXT)]
+        self.assertEqual(markdown_heading_to_text_node(text=text), expected_nodes)
+
+    def test_markdown_heading_to_text_node_italic_h2(self):
+        text = "## *heading2*"
+        expected_nodes = [TextNode("heading2", TEXT_TYPE_ITALIC)]
+        self.assertEqual(markdown_heading_to_text_node(text=text), expected_nodes)
+
+    def test_markdown_heading_to_text_node_bold_h3(self):
+        text = "### **heading3**"
+        expected_nodes = [TextNode("heading3", TEXT_TYPE_BOLD)]
+        self.assertEqual(markdown_heading_to_text_node(text=text), expected_nodes)
+
+    def test_markdown_heading_to_text_node_mix_text_h4(self):
+        text = "#### `heading4` with **bold** word"
+        expected_nodes = [
+            TextNode("heading4", TEXT_TYPE_CODE),
+            TextNode(" with ", TEXT_TYPE_TEXT),
+            TextNode("bold", TEXT_TYPE_BOLD),
+            TextNode(" word", TEXT_TYPE_TEXT),
+        ]
+        self.assertEqual(markdown_heading_to_text_node(text=text), expected_nodes)
+
+    def test_markdown_heading_to_text_node_invalid_heading(self):
+        text = "####### heading7 doesn't exist"
+        expected_nodes = [TextNode("####### heading7 doesn't exist", TEXT_TYPE_TEXT)]
+        self.assertEqual(markdown_heading_to_text_node(text=text), expected_nodes)
+
+
+class TestMarkdownToHtmlNode(unittest.TestCase):
+    def test_markdown_to_html_paragraph_single_line(self):
+        text = "This is **bolded** paragraph"
+        expected = ParentNode(
+            children=[
+                ParentNode(
+                    [
+                        LeafNode(value="This is "),
+                        LeafNode(value="bolded", tag="b"),
+                        LeafNode(value=" paragraph"),
+                    ],
+                    tag="p",
+                )
+            ],
+            tag="div",
+        ).to_html()
+        self.assertEqual(markdown_to_html_node(text=text).to_html(), expected)
+
+    def test_markdown_paragraph_to_text_node_multi_line(self):
+        text = """\
+This is another paragraph with *italic* text and `code` here
+This is the same paragraph on a new line\
+"""
+        expected = ParentNode(
+            children=[
+                ParentNode(
+                    [
+                        LeafNode(value="This is another paragraph with "),
+                        LeafNode(value="italic", tag="i"),
+                        LeafNode(value=" text and "),
+                        LeafNode(value="code", tag="code"),
+                        LeafNode(
+                            value=" here\nThis is the same paragraph on a new line"
+                        ),
+                    ],
+                    tag="p",
+                )
+            ],
+            tag="div",
+        ).to_html()
+        self.assertEqual(markdown_to_html_node(text=text).to_html(), expected)
+
+    def test_markdown_heading_to_text_node(self):
+        text = "# My `awesome` **heading**"
+        expected = ParentNode(
+            children=[
+                ParentNode(
+                    children=[
+                        LeafNode(value="My "),
+                        LeafNode(value="awesome", tag="code"),
+                        LeafNode(value=" "),
+                        LeafNode(value="heading", tag="b"),
+                    ],
+                    tag="h1",
+                )
+            ],
+            tag="div",
+        ).to_html()
+        self.assertEqual(markdown_to_html_node(text=text).to_html(), expected)
+
+    def test_markdown_code_to_text_node(self):
+        text = """```\nprint("Hello World")\n```"""
+        expected = ParentNode(
+            children=[
+                LeafNode(
+                    value="""\nprint("Hello World")\n""",
+                    tag="pre",
+                )
+            ],
+            tag="div",
+        ).to_html()
+        self.assertEqual(markdown_to_html_node(text=text).to_html(), expected)
 
 
 if __name__ == "__main__":
