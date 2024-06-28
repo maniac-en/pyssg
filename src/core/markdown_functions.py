@@ -197,8 +197,14 @@ def markdown_unord_list_to_text_node(text: str) -> List[List[TextNode]]:
     return nodes
 
 
-def markdown_ord_list_to_text_node(text: str) -> List[TextNode]:
-    pass  # Yet to be implemented
+def markdown_ord_list_to_text_node(text: str) -> List[List[TextNode]]:
+    nodes = list()
+    text_without_delimiter = re.sub(r"^\d+\.\s", "", text, flags=re.MULTILINE)
+    for line in text_without_delimiter.split("\n"):
+        if not line:
+            raise NotImplementedError("Empty lists not supported")
+        nodes.append(tf.text_line_to_text_nodes(line))
+    return nodes
 
 
 def markdown_paragraph_to_text_node(text: str) -> List[TextNode]:
@@ -290,6 +296,19 @@ def markdown_to_html_node(text: str) -> ParentNode:
                 )
             )
         elif markdown_block_types[ix] == BLOCK_TYPE_ORD_LIST:
-            nodes.append()  # Yet to be implemented
+            nodes.append(
+                ParentNode(
+                    children=[
+                        ParentNode(
+                            children=[
+                                tf.text_node_to_html_node(node) for node in nodes
+                            ],
+                            tag="li",
+                        )
+                        for nodes in markdown_ord_list_to_text_node(text=block)
+                    ],
+                    tag="ol",
+                )
+            )
 
     return ParentNode(children=nodes, tag="div")

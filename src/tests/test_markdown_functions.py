@@ -319,6 +319,31 @@ This is the same paragraph on a new line\
         with self.assertRaises(NotImplementedError):
             mf.markdown_unord_list_to_text_node(text=text)
 
+    def test_ord_list_single_line(self):
+        text = "1. **yet to add**: `important code`"
+        expected_nodes = [
+            [
+                TextNode("yet to add", tf.TEXT_TYPE_BOLD),
+                TextNode(": ", tf.TEXT_TYPE_TEXT),
+                TextNode("important code", tf.TEXT_TYPE_CODE),
+            ]
+        ]
+        self.assertEqual(mf.markdown_ord_list_to_text_node(text=text), expected_nodes)
+
+    def test_ord_list_multi_line(self):
+        text = "1. item1\n2. item2\n3. item3"
+        expected_nodes = [
+            [TextNode("item1", tf.TEXT_TYPE_TEXT)],
+            [TextNode("item2", tf.TEXT_TYPE_TEXT)],
+            [TextNode("item3", tf.TEXT_TYPE_TEXT)],
+        ]
+        self.assertEqual(mf.markdown_ord_list_to_text_node(text=text), expected_nodes)
+
+    def test_ord_list_empty(self):
+        text = "1. "
+        with self.assertRaises(NotImplementedError):
+            mf.markdown_ord_list_to_text_node(text=text)
+
 
 class TestMarkdownToHtmlNode(unittest.TestCase):
     def test_markdown_to_html_paragraph_single_line(self):
@@ -441,6 +466,34 @@ This is the same paragraph on a new line\
         ).to_html()
         self.assertEqual(mf.markdown_to_html_node(text=text).to_html(), expected)
 
+    def test_markdown_to_html_ord_list(self):
+        text = "1. **bold** item1\n2. *italic_item2*\n3. item3"
+        expected = ParentNode(
+            children=[
+                ParentNode(
+                    children=[
+                        ParentNode(
+                            children=[
+                                LeafNode(value="bold", tag="b"),
+                                LeafNode(value=" item1"),
+                            ],
+                            tag="li",
+                        ),
+                        ParentNode(
+                            children=[
+                                LeafNode(value="italic_item2", tag="i"),
+                            ],
+                            tag="li",
+                        ),
+                        ParentNode(children=[LeafNode(value="item3")], tag="li"),
+                    ],
+                    tag="ol",
+                )
+            ],
+            tag="div",
+        ).to_html()
+        self.assertEqual(mf.markdown_to_html_node(text=text).to_html(), expected)
+
     def test_markdown_to_html_empty_string(self):
         text = ""
         with self.assertRaises(ValueError):
@@ -448,14 +501,19 @@ This is the same paragraph on a new line\
 
     # @@@ needs updated once ordered lists are implemented
     def test_markdown_to_html_mixed_content(self):
-        text = """# Heading 1
+        text = """\
+# Heading 1
 
 This is a paragraph with `code`.
 
 > A blockquote with **bold** text.
 
 * Unordered list item 1
-* Unordered list item 2"""
+* Unordered list item 2
+
+1. Ordered list item 1
+2. Ordered list item 2\
+"""
         expected = ParentNode(
             children=[
                 ParentNode(
@@ -496,6 +554,23 @@ This is a paragraph with `code`.
                         ),
                     ],
                     tag="ul",
+                ),
+                ParentNode(
+                    children=[
+                        ParentNode(
+                            children=[
+                                LeafNode(value="Ordered list item 1"),
+                            ],
+                            tag="li",
+                        ),
+                        ParentNode(
+                            children=[
+                                LeafNode(value="Ordered list item 2"),
+                            ],
+                            tag="li",
+                        ),
+                    ],
+                    tag="ol",
                 ),
             ],
             tag="div",
