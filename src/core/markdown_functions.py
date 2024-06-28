@@ -198,6 +198,21 @@ def markdown_unord_list_to_text_node(text: str) -> List[List[TextNode]]:
 
 
 def markdown_ord_list_to_text_node(text: str) -> List[List[TextNode]]:
+    """
+    Convert a Markdown ordered list to a list of lists of TextNode objects.
+
+    This function processes the input text, removes the Markdown list syntax ("1. ", "2. ", and so on..),
+    and converts each list item into a list of TextNode objects.
+
+    Args:
+        text (str): The Markdown ordered list to be converted.
+
+    Returns:
+        List[List[TextNode]]: A list of lists of TextNode objects representing the text in the ordered list.
+
+    Raises:
+        NotImplementedError: If the ordered list contains an empty item.
+    """
     nodes = list()
     text_without_delimiter = re.sub(r"^\d+\.\s", "", text, flags=re.MULTILINE)
     for line in text_without_delimiter.split("\n"):
