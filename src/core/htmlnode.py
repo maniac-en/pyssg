@@ -83,17 +83,19 @@ class HTMLNode:
         """
         indent_str = " " * indent
         if self.children:
-            children_repr = ",\n".join(
-                child.__repr__(indent + 4) for child in self.children
+            children_repr = (
+                "\n"
+                + ",\n".join(child.__repr__(indent + 4) for child in self.children)
+                + f"\n{indent_str}  "
             )
         else:
-            children_repr = "None"
+            children_repr = " "
         props_repr = ", ".join(f'"{k}": "{v}"' for k, v in self.props.items())
         return (
             f"{indent_str}HTMLNode(\n"
             f"{indent_str}  Tag: {self.tag},\n"
             f"{indent_str}  Value: {self.value},\n"
-            f"{indent_str}  Children: [\n{children_repr}\n{indent_str}  ],\n"
+            f"{indent_str}  Children: [{children_repr}],\n"
             f"{indent_str}  Props: {{ {props_repr} }}\n"
             f"{indent_str})"
         )

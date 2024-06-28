@@ -61,9 +61,7 @@ class TestHTMLNodeRepr(unittest.TestCase):
     HTMLNode(
       Tag: span,
       Value: World,
-      Children: [
-None
-      ],
+      Children: [ ],
       Props: {  }
     )
   ],
