@@ -148,9 +148,6 @@ def split_nodes_image(old_nodes: List[TextNode]) -> List[TextNode]:
     Returns:
         List[TextNode]: A list of TextNode objects including new TextNode objects if necessary.
 
-    Raises:
-        ValueError: If there is an issue with markdown syntax.
-
     The function processes each node to check if it is an instance of TextNode with text type TEXT_TYPE_TEXT.
     If it contains markdown images, it splits the text around the images and creates new TextNode objects for
     each text and image segment.
@@ -182,11 +179,18 @@ def split_nodes_image(old_nodes: List[TextNode]) -> List[TextNode]:
                     )
                     break
 
+                # broken images, or, text with exclaimation mark
+                # so if no images found, assume the text as TEXT_TYPE_TEXT
+                # and append to resultant_nodes
+                images = mf.extract_markdown_images(text=current_text)
+                if not images:
+                    resultant_nodes.append(
+                        TextNode(text=current_text, text_type=TEXT_TYPE_TEXT)
+                    )
+                    break
+
                 # first image tuple
-                try:
-                    image_tuple = mf.extract_markdown_images(text=current_text)[0]
-                except IndexError:
-                    raise ValueError("Invalid markdown")
+                image_tuple = mf.extract_markdown_images(text=current_text)[0]
 
                 splits = current_text.split(
                     f"![{image_tuple[0]}]({image_tuple[1]})", maxsplit=1

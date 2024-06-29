@@ -183,15 +183,15 @@ class TestSplitNodeImage(unittest.TestCase):
         ]
         self.assertEqual(tf.split_nodes_image(nodes), expected_nodes)
 
-    def test_no_images(self):
+    def test_no_images_with_exclamation_sign(self):
         nodes = [
             TextNode(
-                "This is text without any images.",
+                "This is text without any images!",
                 tf.TEXT_TYPE_TEXT,
             )
         ]
         expected_nodes = [
-            TextNode("This is text without any images.", tf.TEXT_TYPE_TEXT),
+            TextNode("This is text without any images!", tf.TEXT_TYPE_TEXT),
         ]
         self.assertEqual(tf.split_nodes_image(nodes), expected_nodes)
 
@@ -207,8 +207,7 @@ class TestSplitNodeImage(unittest.TestCase):
                 tf.TEXT_TYPE_TEXT,
             )
         ]
-        with self.assertRaises(ValueError):
-            tf.split_nodes_image(nodes)
+        self.assertEqual(tf.split_nodes_image(nodes), nodes)
 
 
 class TestSplitNodeLink(unittest.TestCase):
