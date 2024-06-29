@@ -7,6 +7,11 @@ from src.core.textnode import TextNode
 
 
 class TestExtractMarkdownImages(unittest.TestCase):
+    def test_only_image(self):
+        text = "![alt text](http://example.com/image.jpg)"
+        expected = [("alt text", "http://example.com/image.jpg")]
+        self.assertEqual(mf.extract_markdown_images(text), expected)
+
     def test_single_image(self):
         text = "This is an image ![alt text](http://example.com/image.jpg)."
         expected = [("alt text", "http://example.com/image.jpg")]
@@ -32,6 +37,11 @@ class TestExtractMarkdownImages(unittest.TestCase):
 
 
 class TestExtractMarkdownLinks(unittest.TestCase):
+    def test_only_link(self):
+        text = "[link](http://example.com)"
+        expected = [("link", "http://example.com")]
+        self.assertEqual(mf.extract_markdown_links(text), expected)
+
     def test_single_link(self):
         text = "This is a [link](http://example.com)."
         expected = [("link", "http://example.com")]

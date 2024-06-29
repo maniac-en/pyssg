@@ -1,12 +1,24 @@
 import os
 import shutil
 
+import sys
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
+from src.core.generate import generate_page_recursive
+
 
 def main():
-    script_path = os.path.realpath(__file__)
-    static_dir = os.path.join(os.path.dirname(script_path), "static")
-    public_dir = os.path.join(os.path.dirname(os.path.dirname(script_path)), "public")
+    root_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+
+    static_dir = os.path.join(root_path, "src/static")
+    public_dir = os.path.join(root_path, "public")
     copy_static_to_public(static_dir, public_dir)
+
+    content_path = os.path.join(root_path, "content")
+    template_path = os.path.join(root_path, "template.html")
+    generate_page_recursive(
+        content_path=content_path, template_path=template_path, dest_path=public_dir
+    )
 
 
 def copy_static_to_public(static_dir: str, public_dir: str):
