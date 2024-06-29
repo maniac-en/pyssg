@@ -3,7 +3,7 @@ import shutil
 import unittest
 from unittest.mock import patch, call
 
-# from src.main import copy_static_to_public
+from src.main import copy_static_to_public
 
 
 @unittest.skip("@@@ NEED to fix")
