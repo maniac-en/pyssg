@@ -81,13 +81,12 @@ def generate_page_recursive(content_path: str, template_path: str, dest_path: st
     if not os.path.isfile(template_path):
         raise FileNotFoundError(f"Template file not found: {template_path}")
 
-    if os.path.isdir(content_path):
-        for file in os.listdir(content_path):
-            content_src = os.path.join(content_path, file)
-            dest_file = os.path.join(dest_path, file)[:-2] + "html"
-            if os.path.isfile(content_src):
-                generate_page(content_src, template_path, dest_file)
-            elif os.path.isdir(content_src):
-                new_dest_path = os.path.join(dest_path, file)
-                os.makedirs(new_dest_path, exist_ok=True)
-                generate_page_recursive(content_src, template_path, new_dest_path)
+    for file in os.listdir(content_path):
+        content_src = os.path.join(content_path, file)
+        dest_file = os.path.join(dest_path, file)[:-2] + "html"
+        if os.path.isfile(content_src):
+            generate_page(content_src, template_path, dest_file)
+        elif os.path.isdir(content_src):
+            new_dest_path = os.path.join(dest_path, file)
+            os.makedirs(new_dest_path, exist_ok=True)
+            generate_page_recursive(content_src, template_path, new_dest_path)
