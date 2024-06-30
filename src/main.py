@@ -1,6 +1,5 @@
 import os
-from src.core.generate import generate_page_recursive
-from src.core.utils import copy_static_to_public
+from src.core.utils import copy_static_to_public, generate_page_recursive
 
 
 def main():
