@@ -164,7 +164,6 @@ def split_nodes_image(old_nodes: List[TextNode]) -> List[TextNode]:
          TextNode(" images", TEXT_TYPE_TEXT)]
     """
     resultant_nodes = list()
-    delimiter = "!"
     for node in old_nodes:
         if not isinstance(node, TextNode):
             resultant_nodes.append(node)
@@ -173,13 +172,13 @@ def split_nodes_image(old_nodes: List[TextNode]) -> List[TextNode]:
         else:
             current_text = node.text
             while True:
-                if current_text and delimiter not in current_text:
+                if current_text and "!" not in current_text:
                     resultant_nodes.append(
                         TextNode(text=current_text, text_type=TEXT_TYPE_TEXT)
                     )
                     break
 
-                # broken images, or, text with exclaimation mark
+                # broken images, or, text with exclamation mark
                 # so if no images found, assume the text as TEXT_TYPE_TEXT
                 # and append to resultant_nodes
                 images = mf.extract_markdown_images(text=current_text)
@@ -246,7 +245,6 @@ def split_nodes_link(old_nodes: List[TextNode]) -> List[TextNode]:
          TextNode(" links", TEXT_TYPE_TEXT)]
     """
     resultant_nodes = list()
-    delimiter = " ["
     for node in old_nodes:
         if not isinstance(node, TextNode):
             resultant_nodes.append(node)
@@ -255,7 +253,7 @@ def split_nodes_link(old_nodes: List[TextNode]) -> List[TextNode]:
         else:
             current_text = node.text
             while True:
-                if current_text and delimiter not in current_text:
+                if current_text and "[" not in current_text:
                     resultant_nodes.append(
                         TextNode(text=current_text, text_type=TEXT_TYPE_TEXT)
                     )

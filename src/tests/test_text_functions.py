@@ -19,19 +19,19 @@ class TestTextToHtmlNode(unittest.TestCase):
         leaf_node = tf.text_node_to_html_node(text_node)
         self.assertEqual(leaf_node.to_html(), "<i>Italic</i>")
 
-    def test__code(self):
+    def test_code(self):
         text_node = TextNode(text="Code", text_type=tf.TEXT_TYPE_CODE)
         leaf_node = tf.text_node_to_html_node(text_node)
         self.assertEqual(leaf_node.to_html(), "<code>Code</code>")
 
-    def test__link(self):
+    def test_link(self):
         text_node = TextNode(
             text="Link", text_type=tf.TEXT_TYPE_LINK, url="http://example.com"
         )
         leaf_node = tf.text_node_to_html_node(text_node)
         self.assertEqual(leaf_node.to_html(), '<a href="http://example.com">Link</a>')
 
-    def test__image(self):
+    def test_image(self):
         text_node = TextNode(
             text="Image",
             text_type=tf.TEXT_TYPE_IMAGE,
@@ -334,6 +334,13 @@ class TestTextToTextNode(unittest.TestCase):
                 text="link", text_type=tf.TEXT_TYPE_LINK, url="http://example.com"
             ),
             TextNode(text=".", text_type=tf.TEXT_TYPE_TEXT),
+        ]
+        self.assertEqual(tf.text_line_to_text_nodes(text), expected)
+
+    def test_only_link_text(self):
+        text = "[link](http://example.com)"
+        expected = [
+            TextNode(text="link", text_type=tf.TEXT_TYPE_LINK, url="http://example.com")
         ]
         self.assertEqual(tf.text_line_to_text_nodes(text), expected)
 
