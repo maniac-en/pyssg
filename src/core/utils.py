@@ -4,6 +4,29 @@ import re
 from src.core.markdown_functions import markdown_to_html_node
 
 
+def redact_home_path(path: str) -> str:
+    """
+    Redact the user's home directory from the given path.
+
+    This function replaces the user's home directory path in the given
+    absolute path with a tilde ('~'). If the home directory path is not
+    found in the given path, the function returns the original path.
+
+    Args:
+        path (str): The absolute path to be redacted.
+
+    Returns:
+        str: The path with the home directory redacted, or the original
+             path if the home directory is not found.
+
+    Examples:
+        >>> redact_home_path('/Users/username/Documents/file.txt')
+        '~/Documents/file.txt'
+    """
+    home_path = str(os.path.expanduser("~"))
+    return path.replace(home_path, "~")
+
+
 def copy_static_to_public(static_dir: str, public_dir: str):
     """
     Copy the contents of a static directory to a public directory. If the public directory exists, it will be deleted first.
@@ -15,11 +38,11 @@ def copy_static_to_public(static_dir: str, public_dir: str):
     # remove public directory if exists
     if os.path.exists(public_dir):
         shutil.rmtree(public_dir)
-        print(f"Deleting {public_dir} because it already exists!")
+        print(f"Deleting {redact_home_path(public_dir)} because it already exists!")
 
     # create public directory
     os.mkdir(public_dir)
-    print(f"Creating {public_dir}")
+    print(f"Creating {redact_home_path(public_dir)}")
 
     copy_files_rec(static_dir, public_dir)
 
@@ -46,12 +69,12 @@ def copy_files_rec(src: str, dst: str):
         src_file_or_dir = os.path.join(src, file)
         dst_file_or_dir = os.path.join(dst, file)
         if os.path.isfile(src_file_or_dir):
-            print(f"Copying {src_file_or_dir} -> {dst_file_or_dir}")
+            print(f"Copying {redact_home_path(src_file_or_dir)} -> {dst_file_or_dir}")
             shutil.copy(src=src_file_or_dir, dst=dst_file_or_dir)
         elif os.path.isdir(src_file_or_dir):
             if not os.path.exists(dst_file_or_dir):
                 os.mkdir(dst_file_or_dir)
-                print(f"Creating {dst_file_or_dir}")
+                print(f"Creating {redact_home_path(dst_file_or_dir)}")
             copy_files_rec(src_file_or_dir, dst_file_or_dir)
 
 
@@ -92,7 +115,9 @@ def generate_page(src_path: str, template_path: str, dest_path: str):
     if not os.path.isfile(template_path):
         raise FileNotFoundError(f"Template file not found: {template_path}")
 
-    print(f"Generating page from {src_path} to {dest_path} using {template_path}")
+    print(
+        f"Generating page from {redact_home_path(src_path)} to {redact_home_path(dest_path)} using {redact_home_path(template_path)}"
+    )
 
     # read markdown source
     with open(src_path, "r") as f:

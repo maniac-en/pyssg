@@ -4,12 +4,35 @@ import unittest
 from unittest.mock import patch, call, mock_open
 
 from src.core.utils import (
-    copy_static_to_public,
     copy_files_rec,
+    copy_static_to_public,
     extract_title,
     generate_page,
     generate_page_recursive,
+    redact_home_path,
 )
+
+
+class TestRedactHomePath(unittest.TestCase):
+    def test_redact_home_path_in_path(self):
+        home_path = os.path.expanduser("~")
+        test_path = f"{home_path}/Documents/file.txt"
+        expected_result = "~/Documents/file.txt"
+        self.assertEqual(redact_home_path(test_path), expected_result)
+
+    def test_redact_home_path_not_in_path(self):
+        test_path = "/usr/local/bin/file.txt"
+        self.assertEqual(redact_home_path(test_path), test_path)
+
+    def test_redact_home_path_at_root(self):
+        home_path = os.path.expanduser("~")
+        test_path = f"{home_path}/file.txt"
+        expected_result = "~/file.txt"
+        self.assertEqual(redact_home_path(test_path), expected_result)
+
+    def test_redact_home_path_empty_string(self):
+        test_path = ""
+        self.assertEqual(redact_home_path(test_path), test_path)
 
 
 class TestCopyStaticToPublic(unittest.TestCase):
@@ -27,7 +50,9 @@ class TestCopyStaticToPublic(unittest.TestCase):
         copy_static_to_public(static_dir, public_dir)
 
         # Assert calls
-        mock_os.assert_has_calls([call.path.exists(public_dir), call.mkdir(public_dir)])
+        mock_os.assert_has_calls(
+            [call.path.exists(public_dir), call.mkdir(public_dir)], any_order=True
+        )
         mock_shutil.rmtree.assert_called_once_with(public_dir)
         mock_copy_files_rec.assert_called_once_with(static_dir, public_dir)
 
