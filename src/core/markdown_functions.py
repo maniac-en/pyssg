@@ -46,22 +46,43 @@ def extract_markdown_links(text: str) -> List[Tuple[str, str]]:
     return re.findall(r"\[(.*?)\]\((.*?)\)", text)
 
 
-def markdown_to_blocks(text: str) -> List[str]:
+def get_codeblock_indices(text: str) -> List[Tuple[int, int]]:
     """
-    Convert a raw Markdown string into a list of block strings.
+    Identify the start and end indices of all code blocks in a Markdown string.
 
-    This function splits the input Markdown string into distinct blocks, where each
-    block is separated by one or more newlines. It strips any leading or trailing
-    whitespace from each block and removes any empty blocks created by excessive newlines.
+    This function searches for code blocks in the provided Markdown text. Code blocks
+    are defined as text wrapped in triple backticks (```).
 
     Parameters:
     text (str): The raw Markdown string representing a full document.
 
     Returns:
-    List[str]: A list of block strings, with leading and trailing whitespace removed.
+    List[Tuple[int, int]]: A list of tuples, where each tuple contains the start and
+                           end indices of a code block in the text.
     """
+    indices = list()
+    matches = re.finditer(r"^`{3}\n?[\s\S]*?\n?^`{3}", text, re.MULTILINE)
+    for match in matches:
+        indices.append((match.start(0), match.end(0)))
+    return indices
+
+
+def get_non_codeblocks(text: str) -> List[str]:
+    """
+    Extract non-code blocks from a given text by splitting on newlines.
+
+    This function splits the input text into blocks by newlines. It strips any leading
+    or trailing whitespace from each block and removes any empty blocks created by
+    excessive newlines.
+
+    Parameters:
+    text (str): The input text string to be split into non-code blocks.
+
+    Returns:
+    List[str]: A list of non-code block strings, with leading and trailing whitespace removed.
+    """
+    blocks = list()
     lines = text.split("\n")
-    blocks = []
     current_block = []
 
     def add_block():
@@ -77,6 +98,37 @@ def markdown_to_blocks(text: str) -> List[str]:
             current_block.append(stripped_line)
 
     add_block()  # Add the last block if there's any
+
+    return blocks
+
+
+def markdown_to_blocks(text: str) -> List[str]:
+    """
+    Convert a raw Markdown string into a list of block strings.
+
+    This function splits the input Markdown string into distinct blocks, where each
+    block is separated by one or more newlines. It handles code blocks separately,
+    ensuring they are not split incorrectly, and processes non-code blocks to strip
+    any leading or trailing whitespace and remove any empty blocks created by
+    excessive newlines.
+
+    Parameters:
+    text (str): The raw Markdown string representing a full document.
+
+    Returns:
+    List[str]: A list of block strings, with leading and trailing whitespace removed.
+    """
+    blocks = list()
+    current_pos = 0
+    codeblock_indices = get_codeblock_indices(text)
+    if codeblock_indices:
+        for c_start, c_end in codeblock_indices:
+            blocks.extend(get_non_codeblocks(text[current_pos:c_start]))
+            blocks.append(text[c_start:c_end])
+            current_pos = c_end
+        blocks.extend(get_non_codeblocks(text[current_pos:]))
+    else:
+        blocks = get_non_codeblocks(text)
 
     return blocks
 

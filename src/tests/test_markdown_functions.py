@@ -66,6 +66,66 @@ class TestExtractMarkdownLinks(unittest.TestCase):
         self.assertEqual(mf.extract_markdown_links(text), expected)
 
 
+class TestGetCodeblockIndices(unittest.TestCase):
+    def test_single_codeblock(self):
+        text = "```\ncode block\n```"
+        expected = [(0, 18)]
+        self.assertEqual(mf.get_codeblock_indices(text), expected)
+
+    def test_multiple_codeblocks(self):
+        text = "```\ncode block 1\n```\n\n```\ncode block 2\n```"
+        expected = [(0, 20), (22, 42)]
+        self.assertEqual(mf.get_codeblock_indices(text), expected)
+
+    def test_no_codeblocks(self):
+        text = "This is a paragraph."
+        expected = []
+        self.assertEqual(mf.get_codeblock_indices(text), expected)
+
+    def test_incomplete_codeblock(self):
+        text = "```\ncode block"
+        expected = []
+        self.assertEqual(mf.get_codeblock_indices(text), expected)
+
+
+class TestGetNonCodeblocks(unittest.TestCase):
+    def test_single_paragraph(self):
+        text = "This is a paragraph."
+        expected = ["This is a paragraph."]
+        self.assertEqual(mf.get_non_codeblocks(text), expected)
+
+    def test_multiple_paragraphs(self):
+        text = "This is a paragraph.\n\nThis is another paragraph."
+        expected = ["This is a paragraph.", "This is another paragraph."]
+        self.assertEqual(mf.get_non_codeblocks(text), expected)
+
+    def test_mixed_content(self):
+        text = """\
+This is a paragraph.
+
+> This is a quote.
+
+* This is a list item
+* Another list item\
+        """
+        expected = [
+            "This is a paragraph.",
+            "> This is a quote.",
+            "* This is a list item\n* Another list item",
+        ]
+        self.assertEqual(mf.get_non_codeblocks(text), expected)
+
+    def test_codeblock_in_text(self):
+        text = "Paragraph before\n```\ncode block\n```\nParagraph after"
+        expected = ["Paragraph before\n```\ncode block\n```\nParagraph after"]
+        self.assertEqual(mf.get_non_codeblocks(text), expected)
+
+    def test_empty_input(self):
+        text = ""
+        expected = []
+        self.assertEqual(mf.get_non_codeblocks(text), expected)
+
+
 class TestConvertMarkdownToBlock(unittest.TestCase):
     def test_single_paragraph(self):
         text = "This is a paragraph."
@@ -89,27 +149,6 @@ class TestConvertMarkdownToBlock(unittest.TestCase):
         expected = ["* Item 1\n* Item 2"]
         self.assertEqual(mf.markdown_to_blocks(text), expected)
 
-    def test_mixed_content(self):
-        text = """
-        This is **bolded** paragraph
-
-        This is another paragraph with *italic* text and `code` here
-        This is the same paragraph on a new line
-
-        * This is a list
-        * with items
-
-        1. This is also a list
-        2. with items
-        """
-        expected = [
-            "This is **bolded** paragraph",
-            "This is another paragraph with *italic* text and `code` here\nThis is the same paragraph on a new line",
-            "* This is a list\n* with items",
-            "1. This is also a list\n2. with items",
-        ]
-        self.assertEqual(mf.markdown_to_blocks(text), expected)
-
     def test_empty_input(self):
         text = ""
         expected = []
@@ -118,6 +157,64 @@ class TestConvertMarkdownToBlock(unittest.TestCase):
     def test_only_newlines(self):
         text = "\n\n\n"
         expected = []
+        self.assertEqual(mf.markdown_to_blocks(text), expected)
+
+    def test_codeblock_only(self):
+        text = "```\ncode block\n```"
+        expected = ["```\ncode block\n```"]
+        self.assertEqual(mf.markdown_to_blocks(text), expected)
+
+    def test_codeblock_with_text(self):
+        text = "Paragraph before\n```\ncode block\n```\nParagraph after"
+        expected = ["Paragraph before", "```\ncode block\n```", "Paragraph after"]
+        self.assertEqual(mf.markdown_to_blocks(text), expected)
+
+    def test_quote_block(self):
+        text = "> This is a quote"
+        expected = ["> This is a quote"]
+        self.assertEqual(mf.markdown_to_blocks(text), expected)
+
+    def test_heading(self):
+        text = "# This is a heading"
+        expected = ["# This is a heading"]
+        self.assertEqual(mf.markdown_to_blocks(text), expected)
+
+    def test_ordered_list(self):
+        text = "1. First item\n2. Second item"
+        expected = ["1. First item\n2. Second item"]
+        self.assertEqual(mf.markdown_to_blocks(text), expected)
+
+    def test_mixed_content(self):
+        text = """\
+This is **bolded** paragraph
+
+This is another paragraph with *italic* text and `code` here
+This is the same paragraph on a new line
+
+```
+def test_empty_input(self):
+    text = ""
+    expected = []
+    self.assertEqual(mf.markdown_to_blocks(text), expected)
+```
+
+
+* This is a list
+* with items
+
+> This is a quote.
+
+1. This is also a list
+2. with items\
+        """
+        expected = [
+            "This is **bolded** paragraph",
+            "This is another paragraph with *italic* text and `code` here\nThis is the same paragraph on a new line",
+            """```\ndef test_empty_input(self):\n    text = ""\n    expected = []\n    self.assertEqual(mf.markdown_to_blocks(text), expected)\n```""",
+            "* This is a list\n* with items",
+            "> This is a quote.",
+            "1. This is also a list\n2. with items",
+        ]
         self.assertEqual(mf.markdown_to_blocks(text), expected)
 
 
