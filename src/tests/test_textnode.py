@@ -1,5 +1,4 @@
 import unittest
-from typing import Optional
 from src.core.textnode import TextNode
 
 

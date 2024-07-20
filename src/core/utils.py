@@ -1,30 +1,37 @@
 import os
 import shutil
 import re
+from glob import glob
+from typing import List, Dict, Callable
 from src.core.markdown_functions import markdown_to_html_node
 
 
-def redact_home_path(path: str) -> str:
-    """
-    Redact the user's home directory from the given path.
+def find_files_rec(
+    path: str,
+    exclude_dirs: List[str] = [],
+    exclude_files: List[str] = [],
+    filetypes_to_monitor: List[str] = [],
+) -> List[str]:
+    files = list()
+    for dirpath, dirnames, filenames in os.walk(top=path, topdown=True):
+        dirnames[:] = [d for d in dirnames if d not in exclude_dirs]
 
-    This function replaces the user's home directory path in the given
-    absolute path with a tilde ('~'). If the home directory path is not
-    found in the given path, the function returns the original path.
+        for ft in filetypes_to_monitor:
+            for file in filenames:
+                file_path = os.path.join(dirpath, file)
+                if (
+                    file_path in glob(os.path.join(dirpath, f"*.{ft}"), recursive=False)
+                    and file not in exclude_files
+                ):
+                    files.append(file_path)
+    return files
 
-    Args:
-        path (str): The absolute path to be redacted.
 
-    Returns:
-        str: The path with the home directory redacted, or the original
-             path if the home directory is not found.
-
-    Examples:
-        >>> redact_home_path('/Users/username/Documents/file.txt')
-        '~/Documents/file.txt'
-    """
-    home_path = str(os.path.expanduser("~"))
-    return path.replace(home_path, "~")
+def find_file_timestamps(files: List[str]) -> Dict[str, float]:
+    f_times = dict()
+    for file in files:
+        f_times[file] = os.path.getmtime(file)
+    return f_times
 
 
 def copy_static_to_public(static_dir: str, public_dir: str):
@@ -38,16 +45,15 @@ def copy_static_to_public(static_dir: str, public_dir: str):
     # remove public directory if exists
     if os.path.exists(public_dir):
         shutil.rmtree(public_dir)
-        print(f"Deleting {redact_home_path(public_dir)} because it already exists!")
+        print(f"Deleting {public_dir} because it already exists!")
 
     # create public directory
     os.mkdir(public_dir)
-    print(f"Creating {redact_home_path(public_dir)}")
+    print(f"Creating {public_dir}")
 
     copy_files_rec(static_dir, public_dir)
 
 
-# copy files recursively
 def copy_files_rec(src: str, dst: str):
     """
     Recursively copies files and directories from the source directory to the destination directory.
@@ -69,12 +75,12 @@ def copy_files_rec(src: str, dst: str):
         src_file_or_dir = os.path.join(src, file)
         dst_file_or_dir = os.path.join(dst, file)
         if os.path.isfile(src_file_or_dir):
-            print(f"Copying {redact_home_path(src_file_or_dir)} -> {dst_file_or_dir}")
+            print(f"Copying {src_file_or_dir} -> {dst_file_or_dir}")
             shutil.copy(src=src_file_or_dir, dst=dst_file_or_dir)
         elif os.path.isdir(src_file_or_dir):
             if not os.path.exists(dst_file_or_dir):
                 os.mkdir(dst_file_or_dir)
-                print(f"Creating {redact_home_path(dst_file_or_dir)}")
+                print(f"Creating {dst_file_or_dir}")
             copy_files_rec(src_file_or_dir, dst_file_or_dir)
 
 
@@ -97,7 +103,7 @@ def extract_title(text: str) -> str:
     return title.group(1)
 
 
-def generate_page(src_path: str, template_path: str, dest_path: str):
+def generate_page(src_path: str, template_path: str, dest_path: str) -> None:
     """
     Generates an HTML page from a markdown source file using a template.
 
@@ -105,6 +111,8 @@ def generate_page(src_path: str, template_path: str, dest_path: str):
     src_path (str): The path to the markdown source file.
     template_path (str): The path to the HTML template file.
     dest_path (str): The path to save the generated HTML file.
+
+    Returns: None
 
     Raises:
     FileNotFoundError: If the markdown source file or template file does not exist.
@@ -115,9 +123,7 @@ def generate_page(src_path: str, template_path: str, dest_path: str):
     if not os.path.isfile(template_path):
         raise FileNotFoundError(f"Template file not found: {template_path}")
 
-    print(
-        f"Generating page from {redact_home_path(src_path)} to {redact_home_path(dest_path)} using {redact_home_path(template_path)}"
-    )
+    print(f"Generating page from {src_path} to {dest_path} using {template_path}")
 
     # read markdown source
     with open(src_path, "r") as f:
@@ -140,26 +146,30 @@ def generate_page(src_path: str, template_path: str, dest_path: str):
         f.write(templ)
 
 
-def generate_page_recursive(content_path: str, template_path: str, dest_path: str):
+def generate_page_recursive(
+    content_dir: str, template_path: str, dest_path: str
+) -> None:
     """
     Recursively generates HTML pages from markdown source files in a directory
     using a template.
 
     Parameters:
-    content_path (str): The path to the directory containing markdown source files.
+    content_dir (str): The path to the directory containing markdown source files.
     template_path (str): The path to the HTML template file.
     dest_path (str): The path to save the generated HTML files.
+
+    Returns: None
 
     Raises:
     FileNotFoundError: If the content directory or template file does not exist.
     """
-    if not os.path.isdir(content_path):
-        raise FileNotFoundError(f"Content directory not found: {content_path}")
+    if not os.path.isdir(content_dir):
+        raise FileNotFoundError(f"Content directory not found: {content_dir}")
     if not os.path.isfile(template_path):
         raise FileNotFoundError(f"Template file not found: {template_path}")
 
-    for file in os.listdir(content_path):
-        content_src = os.path.join(content_path, file)
+    for file in os.listdir(content_dir):
+        content_src = os.path.join(content_dir, file)
         dest_file = os.path.join(dest_path, file)[:-2] + "html"
         if os.path.isfile(content_src):
             generate_page(content_src, template_path, dest_file)
@@ -167,3 +177,32 @@ def generate_page_recursive(content_path: str, template_path: str, dest_path: st
             new_dest_path = os.path.join(dest_path, file)
             os.makedirs(new_dest_path, exist_ok=True)
             generate_page_recursive(content_src, template_path, new_dest_path)
+
+
+def build_site(
+    static_dir: str, content_dir: str, template_path: str, dest_path: str
+) -> Callable[[], None]:
+    """
+    Copies all static file content from `static_dir` to `dest_path` and creates
+    a closure when called, invokes `generate_page_recursive` that
+    generates HTML pages from markdown source files in a directory using a
+    defined template.
+
+    Parameters:
+    static_dir (str): The path to the directory containing static files such as
+                      CSS, images, etc.
+    content_dir (str): The path to the directory containing markdown source files.
+    template_path (str): The path to the HTML template file.
+    dest_path (str): The path to save the generated HTML files.
+    """
+
+    copy_static_to_public(static_dir=static_dir, public_dir=dest_path)
+
+    def closure():
+        return generate_page_recursive(
+            content_dir=content_dir,
+            template_path=template_path,
+            dest_path=dest_path,
+        )
+
+    return closure

@@ -1,5 +1,4 @@
 import os
-import shutil
 import unittest
 from unittest.mock import patch, call, mock_open
 
@@ -9,30 +8,8 @@ from src.core.utils import (
     extract_title,
     generate_page,
     generate_page_recursive,
-    redact_home_path,
+    build_site,
 )
-
-
-class TestRedactHomePath(unittest.TestCase):
-    def test_redact_home_path_in_path(self):
-        home_path = os.path.expanduser("~")
-        test_path = f"{home_path}/Documents/file.txt"
-        expected_result = "~/Documents/file.txt"
-        self.assertEqual(redact_home_path(test_path), expected_result)
-
-    def test_redact_home_path_not_in_path(self):
-        test_path = "/usr/local/bin/file.txt"
-        self.assertEqual(redact_home_path(test_path), test_path)
-
-    def test_redact_home_path_at_root(self):
-        home_path = os.path.expanduser("~")
-        test_path = f"{home_path}/file.txt"
-        expected_result = "~/file.txt"
-        self.assertEqual(redact_home_path(test_path), expected_result)
-
-    def test_redact_home_path_empty_string(self):
-        test_path = ""
-        self.assertEqual(redact_home_path(test_path), test_path)
 
 
 class TestCopyStaticToPublic(unittest.TestCase):
@@ -387,6 +364,124 @@ class TestGeneratePage(unittest.TestCase):
                     ),
                 ],
             )
+
+
+class TestBuildSite(unittest.TestCase):
+    def setUp(self):
+        self.static_dir = "test_static"
+        self.content_dir = "test_content"
+        self.template_path = "test_template.html"
+        self.dest_path = "test_output"
+
+        # Create test directories and files
+        os.makedirs(self.static_dir, exist_ok=True)
+        os.makedirs(self.content_dir, exist_ok=True)
+        with open(self.template_path, "w") as f:
+            f.write(
+                "<html><head><title>{{ Title }}</title></head><body>{{ Content }}</body></html>"
+            )
+        with open(os.path.join(self.content_dir, "test.md"), "w") as f:
+            f.write("# Test Page\nThis is a test.")
+        with open(os.path.join(self.static_dir, "style.css"), "w") as f:
+            f.write("body { font-family: Arial; }")
+
+    def tearDown(self):
+        # Clean up test directories and files
+        for dir_path in [self.static_dir, self.content_dir, self.dest_path]:
+            if os.path.exists(dir_path):
+                for root, dirs, files in os.walk(dir_path, topdown=False):
+                    for name in files:
+                        os.remove(os.path.join(root, name))
+                    for name in dirs:
+                        os.rmdir(os.path.join(root, name))
+                os.rmdir(dir_path)
+        if os.path.exists(self.template_path):
+            os.remove(self.template_path)
+
+    @patch(
+        "src.core.utils.os.path.isdir", side_effect=lambda x: x != "invalid_content_dir"
+    )
+    @patch("src.core.utils.os.path.isfile", return_value=True)
+    @patch("src.core.utils.copy_static_to_public")
+    def test_build_site_content_dir_not_found(
+        self, mock_copy_static, mock_isfile, mock_isdir
+    ):
+        with self.assertRaises(FileNotFoundError):
+            build_function = build_site(
+                self.static_dir,
+                "invalid_content_dir",
+                self.template_path,
+                self.dest_path,
+            )
+            build_function()
+
+    @patch("src.core.utils.os.path.isdir", return_value=True)
+    @patch(
+        "src.core.utils.os.path.isfile",
+        side_effect=lambda x: x != "invalid_template.html",
+    )
+    @patch("src.core.utils.copy_static_to_public")
+    def test_build_site_template_file_not_found(
+        self, mock_copy_static, mock_isfile, mock_isdir
+    ):
+        with self.assertRaises(FileNotFoundError):
+            build_function = build_site(
+                self.static_dir,
+                self.content_dir,
+                "invalid_template.html",
+                self.dest_path,
+            )
+            build_function()
+
+    @patch("src.core.utils.generate_page_recursive")
+    @patch("src.core.utils.copy_static_to_public")
+    def test_build_site_closure(self, mock_copy_static, mock_generate_page_recursive):
+        build_function = build_site(
+            self.static_dir, self.content_dir, self.template_path, self.dest_path
+        )
+
+        # Check if the returned object is callable
+        self.assertTrue(callable(build_function))
+
+        # Call the closure and check if generate_page_recursive was called
+        build_function()
+        mock_generate_page_recursive.assert_called_once_with(
+            content_dir=self.content_dir,
+            template_path=self.template_path,
+            dest_path=self.dest_path,
+        )
+        mock_copy_static.assert_called_once_with(
+            static_dir=self.static_dir, public_dir=self.dest_path
+        )
+
+    @patch("builtins.print")
+    @patch("src.core.utils.os.makedirs")
+    @patch("src.core.utils.os.path.isdir", return_value=True)
+    @patch("src.core.utils.os.path.isfile", return_value=True)
+    @patch("src.core.utils.generate_page_recursive")
+    @patch("src.core.utils.copy_static_to_public")
+    def test_build_site_success(
+        self,
+        mock_copy_static,
+        mock_generate_page_recursive,
+        mock_isfile,
+        mock_isdir,
+        mock_makedirs,
+        mock_print,
+    ):
+        build_function = build_site(
+            self.static_dir, self.content_dir, self.template_path, self.dest_path
+        )
+        build_function()
+
+        mock_copy_static.assert_called_once_with(
+            static_dir=self.static_dir, public_dir=self.dest_path
+        )
+        mock_generate_page_recursive.assert_called_once_with(
+            content_dir=self.content_dir,
+            template_path=self.template_path,
+            dest_path=self.dest_path,
+        )
 
 
 if __name__ == "__main__":

@@ -1,5 +1,4 @@
-import re
-from typing import List, Tuple
+from typing import List
 from src.core.htmlnode import LeafNode
 from src.core.textnode import TextNode
 import src.core.markdown_functions as mf

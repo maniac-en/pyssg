@@ -606,7 +606,6 @@ This is the same paragraph on a new line\
         with self.assertRaises(ValueError):
             mf.markdown_to_html_node(text=text)
 
-    # @@@ needs updated once ordered lists are implemented
     def test_markdown_to_html_mixed_content(self):
         text = """\
 # Heading 1

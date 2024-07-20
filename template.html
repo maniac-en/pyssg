@@ -6,6 +6,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title> {{ Title }} </title>
     <link href="/index.css" rel="stylesheet">
+     <script>
+        function checkForUpdate() {
+            fetch('/check_update')
+                .then(response => {
+                    if (response.status === 200) {
+                        location.reload();
+                    }
+                })
+                .catch(err => console.error('Error checking for updates:', err));
+        }
+
+        setInterval(checkForUpdate, 1000); // Check every second
+
+        window.onload = () => {
+            checkForUpdate();
+        }
+    </script>
 </head>
 
 <body>

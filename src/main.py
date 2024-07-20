@@ -1,29 +1,21 @@
 import os
-from src.core.utils import copy_static_to_public, generate_page_recursive
-from livereload import Server
+from src.core.utils import build_site
+from src.core.server import run
+
+# Determine the root path based on "main.py" and other desired paths which will
+# later be used for site-code generation and hot-reloading!
+ROOT_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+STATIC_DIR = os.path.join(ROOT_PATH, "src/static")
+PUBLIC_DIR = os.path.join(ROOT_PATH, "public")
+CONTENT_DIR = os.path.join(ROOT_PATH, "content")
+TEMPLATE_PATH = os.path.join(ROOT_PATH, "template.html")
+
+build_handler = build_site(
+    static_dir=STATIC_DIR,
+    content_dir=CONTENT_DIR,
+    template_path=TEMPLATE_PATH,
+    dest_path=PUBLIC_DIR,
+)
 
 if __name__ == "__main__":
-    root_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-
-    static_dir = os.path.join(root_path, "src/static")
-    public_dir = os.path.join(root_path, "public")
-    copy_static_to_public(static_dir, public_dir)
-
-    content_path = os.path.join(root_path, "content")
-    template_path = os.path.join(root_path, "template.html")
-
-    generate_page_recursive(
-        content_path=content_path,
-        template_path=template_path,
-        dest_path=public_dir,
-    )
-
-    handler = lambda: generate_page_recursive(
-        content_path=content_path,
-        template_path=template_path,
-        dest_path=public_dir,
-    )
-
-    server = Server()
-    server.watch(content_path, handler)
-    server.serve(root=public_dir, restart_delay=1)
+    run(root_path=ROOT_PATH, public_dir=PUBLIC_DIR, build_handler=build_handler)

@@ -1,5 +1,4 @@
 import unittest
-from typing import Dict, List, Optional
 from src.core.htmlnode import HTMLNode, LeafNode, ParentNode
 
 
