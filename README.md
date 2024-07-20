@@ -5,7 +5,7 @@
 - `pyssg` is a toy-project written in Python (v3.10.12) implementing the functionality like a [SSG](https://en.wikipedia.org/wiki/Static_site_generator).
 - It serves the generated site using a TCP server whilst also supporting **hot-reloading** using out-of-the-box python libraries.
 
-<!-- video demo here -->
+    https://github.com/user-attachments/assets/3c66bab4-8fda-4dd5-aad0-924acdffb8fa
 
 ## Table of Contents
 
