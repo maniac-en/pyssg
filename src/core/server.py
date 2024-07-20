@@ -9,6 +9,7 @@ HOSTNAME: str = "localhost"
 PORT: int = 8080
 EXCLUDE_DIRS: List[str] = [
     ".git",
+    ".github",
     "__pycache__",
     "venv",
     ".pytest_cache",
