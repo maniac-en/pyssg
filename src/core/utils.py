@@ -183,10 +183,14 @@ def build_site(
     static_dir: str, content_dir: str, template_path: str, dest_path: str
 ) -> Callable[[], None]:
     """
-    Copies all static file content from `static_dir` to `dest_path` and creates
-    a closure when called, invokes `generate_page_recursive` that
-    generates HTML pages from markdown source files in a directory using a
-    defined template.
+    Returns a closure that, when called, copies all static file content from
+    `static_dir` to `dest_path` and then generates HTML pages from markdown
+    source files in a directory using a defined template.
+
+    The returned closure will:
+    1. Copy static files from `static_dir` to `dest_path`.
+    2. Invoke `generate_page_recursive` to generate HTML pages from markdown
+       files in `content_dir` using the specified `template_path`.
 
     Parameters:
     static_dir (str): The path to the directory containing static files such as
@@ -194,12 +198,16 @@ def build_site(
     content_dir (str): The path to the directory containing markdown source files.
     template_path (str): The path to the HTML template file.
     dest_path (str): The path to save the generated HTML files.
+
+    Returns:
+    Callable[[], None]: A closure that performs the described operations when called.
     """
 
-    copy_static_to_public(static_dir=static_dir, public_dir=dest_path)
-
     def closure():
-        return generate_page_recursive(
+        # Copy static files every time the closure is called
+        copy_static_to_public(static_dir=static_dir, public_dir=dest_path)
+        # Generate HTML pages from markdown source files
+        generate_page_recursive(
             content_dir=content_dir,
             template_path=template_path,
             dest_path=dest_path,
