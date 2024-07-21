@@ -3,6 +3,29 @@
 # pyssg
 
 - `pyssg` is a toy-project written in Python (v3.10.12) implementing the functionality like a [SSG](https://en.wikipedia.org/wiki/Static_site_generator).
+- Note: It's not aimed to support the entire markdown syntax. It supports following:
+
+    - Multiline markdown blocks should be separated by newlines:<br><br>
+    ```
+    - Headings (1-6)
+    - Paragraphs    
+    - Quoteblocks
+    - Codeblocks    
+    - Ordered Lists
+    - Unordered Lists
+    ```
+
+    - Inline blocks:<br><br>
+    ```
+    - Bold      -> **bold**
+    - Italic    -> *italic*
+    - Codeblock -> `code`
+    - Link      -> [text](link)
+    - Image     -> ![alt-text](src-link)
+    ```
+
+  - Nested blocks will throw `ValueError` for `Invalid Markdown Syntax`
+
 - It serves the generated site using a TCP server whilst also supporting **hot-reloading** using out-of-the-box python libraries.
 
     https://github.com/user-attachments/assets/3c66bab4-8fda-4dd5-aad0-924acdffb8fa
