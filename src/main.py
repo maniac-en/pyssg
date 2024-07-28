@@ -10,7 +10,7 @@ PUBLIC_DIR = os.path.join(ROOT_PATH, "public")
 CONTENT_DIR = os.path.join(ROOT_PATH, "content")
 TEMPLATE_PATH = os.path.join(ROOT_PATH, "template.html")
 
-build_handler = build_site(
+build_site_handler = build_site(
     static_dir=STATIC_DIR,
     content_dir=CONTENT_DIR,
     template_path=TEMPLATE_PATH,
@@ -18,4 +18,8 @@ build_handler = build_site(
 )
 
 if __name__ == "__main__":
-    run(root_path=ROOT_PATH, public_dir=PUBLIC_DIR, build_handler=build_handler)
+    run(
+        root_path=ROOT_PATH,
+        public_dir=PUBLIC_DIR,
+        build_site_handler=build_site_handler,
+    )

@@ -137,7 +137,7 @@ class MyHttpRequestHandler(SimpleHTTPRequestHandler):
 def create_handler(
     root_path: str,
     public_dir: str,
-    build_handler: Callable[[], None],
+    build_site_handler: Callable[[], None],
     tracked_files: List[str],
     tracked_filestamps: Dict[str, float],
 ) -> type[MyHttpRequestHandler]:
@@ -147,7 +147,7 @@ def create_handler(
     Args:
     - root_path (str): The root directory path to monitor.
     - public_dir (str): The directory from which to serve public files.
-    - build_handler (Callable[[], None]): The handler function to execute on build.
+    - build_site_handler (Callable[[], None]): The handler function to execute on build.
     - tracked_files (List[str]): The files the server is tracking for changes
     - tracked_filestamps (Dict[str, float]): The last modified timestamps for
     the files being tracked
@@ -171,7 +171,7 @@ def create_handler(
             """
             self.root_path = root_path
             self.public_dir = public_dir
-            self.build_handler = build_handler
+            self.build_site_handler = build_site_handler
             super().__init__(*args, directory=self.public_dir, **kwargs)
 
         def log_message(self, format, *args):
@@ -202,7 +202,7 @@ def create_handler(
                     self.__class__.tracked_files, self.__class__.tracked_filestamps = (
                         get_updated_tracked_lists(self.root_path)
                     )
-                    self.build_handler()
+                    self.build_site_handler()
                     self.send_response(200)
                     self.end_headers()
                     self.wfile.write(b"update")
@@ -237,14 +237,14 @@ def create_handler(
     return CustomHandler
 
 
-def run(root_path: str, public_dir: str, build_handler: Callable[[], None]):
+def run(root_path: str, public_dir: str, build_site_handler: Callable[[], None]):
     """
     Runs the HTTP server with the custom request handler.
 
     Args:
     - root_path (str): The root directory path to monitor.
     - public_dir (str): The directory from which to serve public files.
-    - build_handler (Callable[[], None]): The handler function to execute for build.
+    - build_site_handler (Callable[[], None]): The handler function to execute for build.
     """
     global HOSTNAME, PORT, tracked_files, tracked_filestamps
 
@@ -252,13 +252,13 @@ def run(root_path: str, public_dir: str, build_handler: Callable[[], None]):
     tracked_files, tracked_filestamps = get_updated_tracked_lists(root_path)
 
     # Execute the build handler function
-    build_handler()
+    build_site_handler()
 
     # Create TCP server with custom handler
     TCPHandler = create_handler(
         root_path=root_path,
         public_dir=public_dir,
-        build_handler=build_handler,
+        build_site_handler=build_site_handler,
         tracked_files=tracked_files,
         tracked_filestamps=tracked_filestamps,
     )

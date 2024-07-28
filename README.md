@@ -8,9 +8,9 @@
     - Multiline markdown blocks should be separated by newlines:<br><br>
     ```
     - Headings (1-6)
-    - Paragraphs    
+    - Paragraphs
     - Quoteblocks
-    - Codeblocks    
+    - Codeblocks
     - Ordered Lists
     - Unordered Lists
     ```
