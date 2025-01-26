@@ -103,7 +103,7 @@ def extract_title(text: str) -> str:
     return title.group(1)
 
 
-def generate_page(src_path, template_path, dest_path, base_path: str) -> None:
+def generate_page(src_path, template_path, dest_path, base_path: str, css_path: str = "/index.css", enable_hot_reload: bool = True) -> None:
     """
     Generates an HTML page from a markdown source file using a template.
 
@@ -137,10 +137,48 @@ def generate_page(src_path, template_path, dest_path, base_path: str) -> None:
     html_content = markdown_to_html_node(src).to_html()
     title = extract_title(src)
 
+    # Generate hot reload script if enabled
+    hot_reload_script = ""
+    if enable_hot_reload:
+        hot_reload_script = '''<script>
+        function checkForUpdate() {
+            fetch('/check_update')
+                .then(response => {
+                    if (response.status === 200) {
+                        location.reload();
+                    }
+                })
+                .catch(err => console.error('Error checking for updates:', err));
+        }
+
+        setInterval(checkForUpdate, 1000); // Check every second
+
+        window.onload = () => {
+            checkForUpdate();
+        }
+    </script>'''
+
+    # Construct proper CSS path with base path
+    if css_path.startswith('/'):
+        full_css_path = f"{base_path.rstrip('/')}{css_path}"
+    else:
+        full_css_path = f"{base_path.rstrip('/')}/{css_path}"
+    
     templ = templ.replace("{{ Title }}", title)
     templ = templ.replace("{{ Content }}", html_content)
+    templ = templ.replace("{{ CSSPath }}", full_css_path)
+    templ = templ.replace("{{ HotReloadScript }}", hot_reload_script)
+    
+    # Temporarily replace CSS href to protect it from generic replacement
+    css_placeholder = "___CSS_HREF_PLACEHOLDER___"
+    templ = templ.replace(f'href="{full_css_path}"', f'href="{css_placeholder}"')
+    
+    # Apply base path to other absolute URLs
     templ = templ.replace('href="/', f'href="{base_path}')
     templ = templ.replace('src="/', f'src="{base_path}')
+    
+    # Restore the CSS href
+    templ = templ.replace(f'href="{css_placeholder}"', f'href="{full_css_path}"')
 
     if not os.path.exists(os.path.dirname(dest_path)):
         os.makedirs(os.path.dirname(dest_path))
@@ -150,7 +188,7 @@ def generate_page(src_path, template_path, dest_path, base_path: str) -> None:
 
 
 def generate_page_recursive(
-    content_dir, template_path, dest_path, base_path: str
+    content_dir, template_path, dest_path, base_path: str, css_path: str = "/index.css", enable_hot_reload: bool = True
 ) -> None:
     """
     Recursively generates HTML pages from markdown source files in a directory
@@ -176,15 +214,15 @@ def generate_page_recursive(
         content_src = os.path.join(content_dir, file)
         dest_file = os.path.join(dest_path, file)[:-2] + "html"
         if os.path.isfile(content_src):
-            generate_page(content_src, template_path, dest_file, base_path)
+            generate_page(content_src, template_path, dest_file, base_path, css_path, enable_hot_reload)
         elif os.path.isdir(content_src):
             new_dest_path = os.path.join(dest_path, file)
             os.makedirs(new_dest_path, exist_ok=True)
-            generate_page_recursive(content_src, template_path, new_dest_path, base_path)
+            generate_page_recursive(content_src, template_path, new_dest_path, base_path, css_path, enable_hot_reload)
 
 
 def build_site(
-    static_dir, content_dir, template_path, dest_path, base_path: str
+    static_dir, content_dir, template_path, dest_path, base_path: str, css_path: str = "/index.css", enable_hot_reload: bool = True
 ) -> Callable[[], None]:
     """
     Returns a closure that, when called, copies all static file content from
@@ -216,6 +254,8 @@ def build_site(
             template_path=template_path,
             dest_path=dest_path,
             base_path=base_path,
+            css_path=css_path,
+            enable_hot_reload=enable_hot_reload,
         )
 
     return closure

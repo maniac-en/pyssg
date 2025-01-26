@@ -1,0 +1,20 @@
+{
+  "project": {
+    "name": "pyssg",
+    "title": "Python Static Site Generator"
+  },
+  "paths": {
+    "content_dir": "content",
+    "static_dir": "src/static",
+    "template_path": "template.html",
+    "build_dir": "docs"
+  },
+  "server": {
+    "enable_hot_reload": true,
+    "port": 8080
+  },
+  "build": {
+    "base_path": "/",
+    "css_path": "/index.css"
+  }
+}

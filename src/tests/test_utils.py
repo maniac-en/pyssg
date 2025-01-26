@@ -356,12 +356,12 @@ class TestGeneratePage(unittest.TestCase):
 
             mock_generate_page.assert_has_calls(
                 [
-                    call("content/file1.md", "template.html", "dest/file1.html", "/"),
+                    call("content/file1.md", "template.html", "dest/file1.html", "/", "/index.css", True),
                     call(
                         "content/subdir/file2.md",
                         "template.html",
                         "dest/subdir/file2.html",
-                        "/"
+                        "/", "/index.css", True
                     ),
                 ],
             )
@@ -453,6 +453,8 @@ class TestBuildSite(unittest.TestCase):
             template_path=self.template_path,
             dest_path=self.dest_path,
             base_path="/",
+            css_path="/index.css",
+            enable_hot_reload=True,
         )
         mock_copy_static.assert_called_once_with(
             static_dir=self.static_dir, build_dir=self.dest_path
@@ -486,6 +488,8 @@ class TestBuildSite(unittest.TestCase):
             template_path=self.template_path,
             dest_path=self.dest_path,
             base_path="/",
+            css_path="/index.css",
+            enable_hot_reload=True,
         )
 
 

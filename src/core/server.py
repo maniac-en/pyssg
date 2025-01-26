@@ -210,18 +210,7 @@ def create_handler(
                     self.send_response(204)
                     self.end_headers()
             else:
-                # Construct the requested file path within build_dir
-                requested_file_path = self.translate_path(self.path) + ".html"
-
-                # Check if the requested file path exists
-                if os.path.exists(requested_file_path):
-                    # Construct the redirect URL
-                    redirect_url = f"http://{HOSTNAME}:{PORT}/{os.path.relpath(requested_file_path, self.build_dir)}"
-                    self.send_response(301)
-                    self.send_header("Location", redirect_url)
-                    self.end_headers()
-                else:
-                    super().do_GET()
+                super().do_GET()
 
         def shutdown(self):
             """
@@ -237,7 +226,7 @@ def create_handler(
     return CustomHandler
 
 
-def run(root_path: str, build_dir: str, build_site_handler: Callable[[], None]):
+def run(root_path: str, build_dir: str, build_site_handler: Callable[[], None], port: int = 8080):
     """
     Runs the HTTP server with the custom request handler.
 
@@ -245,8 +234,10 @@ def run(root_path: str, build_dir: str, build_site_handler: Callable[[], None]):
     - root_path (str): The root directory path to monitor.
     - build_dir (str): The directory from which to serve built files.
     - build_site_handler (Callable[[], None]): The handler function to execute for build.
+    - port (int): The port to run the server on.
     """
     global HOSTNAME, PORT, tracked_files, tracked_filestamps
+    PORT = port
 
     # Initialize tracked files and timestamps
     tracked_files, tracked_filestamps = get_updated_tracked_lists(root_path)
