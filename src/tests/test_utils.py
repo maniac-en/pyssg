@@ -18,20 +18,20 @@ class TestCopyStaticToPublic(unittest.TestCase):
     @patch("src.core.utils.os")
     def test_copy_static_to_public(self, mock_os, mock_shutil, mock_copy_files_rec):
         static_dir = os.path.join("src", "static")
-        public_dir = "public"
+        build_dir = "public"
 
         # Setup mock
         mock_os.path.exists.return_value = True
 
         # Run the function
-        copy_static_to_public(static_dir, public_dir)
+        copy_static_to_public(static_dir, build_dir)
 
         # Assert calls
         mock_os.assert_has_calls(
-            [call.path.exists(public_dir), call.mkdir(public_dir)], any_order=True
+            [call.path.exists(build_dir), call.mkdir(build_dir)], any_order=True
         )
-        mock_shutil.rmtree.assert_called_once_with(public_dir)
-        mock_copy_files_rec.assert_called_once_with(static_dir, public_dir)
+        mock_shutil.rmtree.assert_called_once_with(build_dir)
+        mock_copy_files_rec.assert_called_once_with(static_dir, build_dir)
 
     @patch("src.core.utils.copy_files_rec")
     @patch("src.core.utils.shutil")
@@ -40,19 +40,19 @@ class TestCopyStaticToPublic(unittest.TestCase):
         self, mock_os, mock_shutil, mock_copy_files_rec
     ):
         static_dir = "src/static"
-        public_dir = "public"
+        build_dir = "public"
 
         # Setup mock
         mock_os.path.exists.return_value = False
 
         # Run the function
-        copy_static_to_public(static_dir, public_dir)
+        copy_static_to_public(static_dir, build_dir)
 
         # Assert calls
-        mock_os.path.exists.assert_called_once_with(public_dir)
+        mock_os.path.exists.assert_called_once_with(build_dir)
         self.assertFalse(mock_shutil.rmtree.called)
-        mock_os.mkdir.assert_called_once_with(public_dir)
-        mock_copy_files_rec.assert_called_once_with(static_dir, public_dir)
+        mock_os.mkdir.assert_called_once_with(build_dir)
+        mock_copy_files_rec.assert_called_once_with(static_dir, build_dir)
 
 
 class TestCopyFilesRec(unittest.TestCase):
@@ -225,13 +225,13 @@ class TestGeneratePage(unittest.TestCase):
     def test_generate_page_source_file_not_found(self, mock_isfile):
         mock_isfile.side_effect = lambda x: x == "template.html"
         with self.assertRaises(FileNotFoundError):
-            generate_page("non_existent_src.md", "template.html", "dest.html")
+            generate_page("non_existent_src.md", "template.html", "dest.html", "/")
 
     @patch("os.path.isfile")
     def test_generate_page_template_file_not_found(self, mock_isfile):
         mock_isfile.side_effect = lambda x: x == "src.md"
         with self.assertRaises(FileNotFoundError):
-            generate_page("src.md", "non_existent_template.html", "dest.html")
+            generate_page("src.md", "non_existent_template.html", "dest.html", "/")
 
     @patch(
         "builtins.open", new_callable=mock_open, read_data="## No h1 header\nContent"
@@ -240,7 +240,7 @@ class TestGeneratePage(unittest.TestCase):
     def test_generate_page_no_h1_header(self, mock_isfile, mock_open):
         mock_isfile.side_effect = lambda x: True
         with self.assertRaises(ValueError):
-            generate_page("src.md", "template.html", "dest.html")
+            generate_page("src.md", "template.html", "dest.html", "/")
 
     @patch("src.core.utils.open", new_callable=mock_open)
     @patch("src.core.utils.os")
@@ -260,7 +260,7 @@ class TestGeneratePage(unittest.TestCase):
         mock_file_open.side_effect = [mock_file_a, mock_file_b, mock_file_c]
 
         # Run function
-        generate_page("src.md", "template.html", "dest.html")
+        generate_page("src.md", "template.html", "dest.html", "/")
 
         # Assert calls
         mock_os.path.isfile.assert_has_calls([call("src.md"), call("template.html")])
@@ -278,13 +278,13 @@ class TestGeneratePage(unittest.TestCase):
     def test_generate_page_recursive_content_dir_not_found(self, mock_isdir):
         mock_isdir.side_effect = lambda x: x == "template.html"
         with self.assertRaises(FileNotFoundError):
-            generate_page_recursive("non_existent_content", "template.html", "dest")
+            generate_page_recursive("non_existent_content", "template.html", "dest", "/")
 
     @patch("src.core.utils.os.path.isfile")
     def test_generate_page_recursive_template_file_not_found(self, mock_isfile):
         mock_isfile.side_effect = lambda x: x == "content"
         with self.assertRaises(FileNotFoundError):
-            generate_page_recursive("content", "non_existent_template.html", "dest")
+            generate_page_recursive("content", "non_existent_template.html", "dest", "/")
 
     @patch("src.core.utils.os")
     def test_generate_page_recursive(self, mock_os):
@@ -330,7 +330,7 @@ class TestGeneratePage(unittest.TestCase):
 
         # Assert calls
         with patch("src.core.utils.generate_page") as mock_generate_page:
-            generate_page_recursive("content", "template.html", "dest")
+            generate_page_recursive("content", "template.html", "dest", "/")
 
             expected_os_calls = [
                 call.path.isdir("content"),
@@ -356,11 +356,12 @@ class TestGeneratePage(unittest.TestCase):
 
             mock_generate_page.assert_has_calls(
                 [
-                    call("content/file1.md", "template.html", "dest/file1.html"),
+                    call("content/file1.md", "template.html", "dest/file1.html", "/"),
                     call(
                         "content/subdir/file2.md",
                         "template.html",
                         "dest/subdir/file2.html",
+                        "/"
                     ),
                 ],
             )
@@ -412,6 +413,7 @@ class TestBuildSite(unittest.TestCase):
                 "invalid_content_dir",
                 self.template_path,
                 self.dest_path,
+                "/"
             )
             build_function()
 
@@ -430,6 +432,7 @@ class TestBuildSite(unittest.TestCase):
                 self.content_dir,
                 "invalid_template.html",
                 self.dest_path,
+                "/",
             )
             build_function()
 
@@ -437,7 +440,7 @@ class TestBuildSite(unittest.TestCase):
     @patch("src.core.utils.copy_static_to_public")
     def test_build_site_closure(self, mock_copy_static, mock_generate_page_recursive):
         build_function = build_site(
-            self.static_dir, self.content_dir, self.template_path, self.dest_path
+            self.static_dir, self.content_dir, self.template_path, self.dest_path, "/"
         )
 
         # Check if the returned object is callable
@@ -449,9 +452,10 @@ class TestBuildSite(unittest.TestCase):
             content_dir=self.content_dir,
             template_path=self.template_path,
             dest_path=self.dest_path,
+            base_path="/",
         )
         mock_copy_static.assert_called_once_with(
-            static_dir=self.static_dir, public_dir=self.dest_path
+            static_dir=self.static_dir, build_dir=self.dest_path
         )
 
     @patch("builtins.print")
@@ -470,17 +474,18 @@ class TestBuildSite(unittest.TestCase):
         mock_print,
     ):
         build_function = build_site(
-            self.static_dir, self.content_dir, self.template_path, self.dest_path
+            self.static_dir, self.content_dir, self.template_path, self.dest_path, "/"
         )
         build_function()
 
         mock_copy_static.assert_called_once_with(
-            static_dir=self.static_dir, public_dir=self.dest_path
+            static_dir=self.static_dir, build_dir=self.dest_path
         )
         mock_generate_page_recursive.assert_called_once_with(
             content_dir=self.content_dir,
             template_path=self.template_path,
             dest_path=self.dest_path,
+            base_path="/",
         )
 
 

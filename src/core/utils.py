@@ -34,24 +34,24 @@ def find_file_timestamps(files: List[str]) -> Dict[str, float]:
     return f_times
 
 
-def copy_static_to_public(static_dir: str, public_dir: str):
+def copy_static_to_public(static_dir, build_dir: str):
     """
-    Copy the contents of a static directory to a public directory. If the public directory exists, it will be deleted first.
+    Copy the contents of a static directory to a build directory. If the build directory exists, it will be deleted first.
 
     Args:
         static_dir (str): The source directory to copy files from.
-        public_dir (str): The destination directory to copy files to.
+        build_dir (str): The destination directory to copy files to.
     """
     # remove public directory if exists
-    if os.path.exists(public_dir):
-        shutil.rmtree(public_dir)
-        print(f"Deleting {public_dir} because it already exists!")
+    if os.path.exists(build_dir):
+        shutil.rmtree(build_dir)
+        print(f"Deleting {build_dir} because it already exists!")
 
     # create public directory
-    os.mkdir(public_dir)
-    print(f"Creating {public_dir}")
+    os.mkdir(build_dir)
+    print(f"Creating {build_dir}")
 
-    copy_files_rec(static_dir, public_dir)
+    copy_files_rec(static_dir, build_dir)
 
 
 def copy_files_rec(src: str, dst: str):
@@ -103,7 +103,7 @@ def extract_title(text: str) -> str:
     return title.group(1)
 
 
-def generate_page(src_path: str, template_path: str, dest_path: str) -> None:
+def generate_page(src_path, template_path, dest_path, base_path: str) -> None:
     """
     Generates an HTML page from a markdown source file using a template.
 
@@ -111,6 +111,7 @@ def generate_page(src_path: str, template_path: str, dest_path: str) -> None:
     src_path (str): The path to the markdown source file.
     template_path (str): The path to the HTML template file.
     dest_path (str): The path to save the generated HTML file.
+    base_path (str): The path assumed to be the root of build directory
 
     Returns: None
 
@@ -138,6 +139,8 @@ def generate_page(src_path: str, template_path: str, dest_path: str) -> None:
 
     templ = templ.replace("{{ Title }}", title)
     templ = templ.replace("{{ Content }}", html_content)
+    templ = templ.replace('href="/', f'href="{base_path}')
+    templ = templ.replace('src="/', f'src="{base_path}')
 
     if not os.path.exists(os.path.dirname(dest_path)):
         os.makedirs(os.path.dirname(dest_path))
@@ -147,7 +150,7 @@ def generate_page(src_path: str, template_path: str, dest_path: str) -> None:
 
 
 def generate_page_recursive(
-    content_dir: str, template_path: str, dest_path: str
+    content_dir, template_path, dest_path, base_path: str
 ) -> None:
     """
     Recursively generates HTML pages from markdown source files in a directory
@@ -157,6 +160,7 @@ def generate_page_recursive(
     content_dir (str): The path to the directory containing markdown source files.
     template_path (str): The path to the HTML template file.
     dest_path (str): The path to save the generated HTML files.
+    base_path (str): The path assumed to be the root of build directory
 
     Returns: None
 
@@ -172,23 +176,23 @@ def generate_page_recursive(
         content_src = os.path.join(content_dir, file)
         dest_file = os.path.join(dest_path, file)[:-2] + "html"
         if os.path.isfile(content_src):
-            generate_page(content_src, template_path, dest_file)
+            generate_page(content_src, template_path, dest_file, base_path)
         elif os.path.isdir(content_src):
             new_dest_path = os.path.join(dest_path, file)
             os.makedirs(new_dest_path, exist_ok=True)
-            generate_page_recursive(content_src, template_path, new_dest_path)
+            generate_page_recursive(content_src, template_path, new_dest_path, base_path)
 
 
 def build_site(
-    static_dir: str, content_dir: str, template_path: str, dest_path: str
+    static_dir, content_dir, template_path, dest_path, base_path: str
 ) -> Callable[[], None]:
     """
     Returns a closure that, when called, copies all static file content from
     `static_dir` to `dest_path` and then generates HTML pages from markdown
-    source files in a directory using a defined template.
+    source files in a directory using a defined template at the `base_path`
 
     The returned closure will:
-    1. Copy static files from `static_dir` to `dest_path`.
+    1. Copy static files from `static_dir` to `dest_path` at the `base_path`.
     2. Invoke `generate_page_recursive` to generate HTML pages from markdown
        files in `content_dir` using the specified `template_path`.
 
@@ -198,19 +202,20 @@ def build_site(
     content_dir (str): The path to the directory containing markdown source files.
     template_path (str): The path to the HTML template file.
     dest_path (str): The path to save the generated HTML files.
+    base_path (str): The path assumed to be the root of build directory
 
     Returns:
     Callable[[], None]: A closure that performs the described operations when called.
     """
-
     def closure():
         # Copy static files every time the closure is called
-        copy_static_to_public(static_dir=static_dir, public_dir=dest_path)
+        copy_static_to_public(static_dir=static_dir, build_dir=dest_path)
         # Generate HTML pages from markdown source files
         generate_page_recursive(
             content_dir=content_dir,
             template_path=template_path,
             dest_path=dest_path,
+            base_path=base_path,
         )
 
     return closure

@@ -14,7 +14,7 @@ EXCLUDE_DIRS: List[str] = [
     "venv",
     ".pytest_cache",
     "tests",
-    "public",
+    "docs",
 ]
 EXCLUDE_FILES: List[str] = ["README.md", "TODO.md"]
 FILETYPES_TO_MONITOR: List[str] = ["md", "html", "css", "js"]
@@ -136,7 +136,7 @@ class MyHttpRequestHandler(SimpleHTTPRequestHandler):
 
 def create_handler(
     root_path: str,
-    public_dir: str,
+    build_dir: str,
     build_site_handler: Callable[[], None],
     tracked_files: List[str],
     tracked_filestamps: Dict[str, float],
@@ -146,7 +146,7 @@ def create_handler(
 
     Args:
     - root_path (str): The root directory path to monitor.
-    - public_dir (str): The directory from which to serve public files.
+    - build_dir (str): The directory from which to serve built files.
     - build_site_handler (Callable[[], None]): The handler function to execute on build.
     - tracked_files (List[str]): The files the server is tracking for changes
     - tracked_filestamps (Dict[str, float]): The last modified timestamps for
@@ -170,9 +170,9 @@ def create_handler(
             Initializes the custom HTTP request handler.
             """
             self.root_path = root_path
-            self.public_dir = public_dir
+            self.build_dir = build_dir
             self.build_site_handler = build_site_handler
-            super().__init__(*args, directory=self.public_dir, **kwargs)
+            super().__init__(*args, directory=self.build_dir, **kwargs)
 
         def log_message(self, format, *args):
             """
@@ -210,13 +210,13 @@ def create_handler(
                     self.send_response(204)
                     self.end_headers()
             else:
-                # Construct the requested file path within public_dir
+                # Construct the requested file path within build_dir
                 requested_file_path = self.translate_path(self.path) + ".html"
 
                 # Check if the requested file path exists
                 if os.path.exists(requested_file_path):
                     # Construct the redirect URL
-                    redirect_url = f"http://{HOSTNAME}:{PORT}/{os.path.relpath(requested_file_path, self.public_dir)}"
+                    redirect_url = f"http://{HOSTNAME}:{PORT}/{os.path.relpath(requested_file_path, self.build_dir)}"
                     self.send_response(301)
                     self.send_header("Location", redirect_url)
                     self.end_headers()
@@ -237,13 +237,13 @@ def create_handler(
     return CustomHandler
 
 
-def run(root_path: str, public_dir: str, build_site_handler: Callable[[], None]):
+def run(root_path: str, build_dir: str, build_site_handler: Callable[[], None]):
     """
     Runs the HTTP server with the custom request handler.
 
     Args:
     - root_path (str): The root directory path to monitor.
-    - public_dir (str): The directory from which to serve public files.
+    - build_dir (str): The directory from which to serve built files.
     - build_site_handler (Callable[[], None]): The handler function to execute for build.
     """
     global HOSTNAME, PORT, tracked_files, tracked_filestamps
@@ -257,7 +257,7 @@ def run(root_path: str, public_dir: str, build_site_handler: Callable[[], None])
     # Create TCP server with custom handler
     TCPHandler = create_handler(
         root_path=root_path,
-        public_dir=public_dir,
+        build_dir=build_dir,
         build_site_handler=build_site_handler,
         tracked_files=tracked_files,
         tracked_filestamps=tracked_filestamps,
