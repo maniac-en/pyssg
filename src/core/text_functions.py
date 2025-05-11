@@ -64,8 +64,8 @@ def split_nodes_delimiter(
         NotImplementedError: If the delimiter is nested within a node's text.
 
     Example:
-        >>> nodes = [TextNode("This is *italic* and **bold** text", TEXT_TYPE_TEXT)]
-        >>> result = split_nodes_delimiter(nodes, "*", TEXT_TYPE_ITALIC)
+        >>> nodes = [TextNode("This is _italic_ and **bold** text", TEXT_TYPE_TEXT)]
+        >>> result = split_nodes_delimiter(nodes, "_", TEXT_TYPE_ITALIC)
         >>> for node in result:
         >>>     print(f"text: {node.text}, type: {node.text_type}")
         text: This is , type: TEXT_TYPE_TEXT
@@ -308,7 +308,7 @@ def text_line_to_text_nodes(text: str) -> List[TextNode]:
         text_nodes = split_nodes_image(text_nodes)
         text_nodes = split_nodes_link(text_nodes)
         text_nodes = split_nodes_delimiter(text_nodes, "**", TEXT_TYPE_BOLD)
-        text_nodes = split_nodes_delimiter(text_nodes, "*", TEXT_TYPE_ITALIC)
+        text_nodes = split_nodes_delimiter(text_nodes, "_", TEXT_TYPE_ITALIC)
         text_nodes = split_nodes_delimiter(text_nodes, "`", TEXT_TYPE_CODE)
     except ValueError as e:
         raise e

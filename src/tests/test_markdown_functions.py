@@ -188,7 +188,7 @@ class TestConvertMarkdownToBlock(unittest.TestCase):
         text = """\
 This is **bolded** paragraph
 
-This is another paragraph with *italic* text and `code` here
+This is another paragraph with _italic_ text and `code` here
 This is the same paragraph on a new line
 
 ```
@@ -209,7 +209,7 @@ def test_empty_input(self):
         """
         expected = [
             "This is **bolded** paragraph",
-            "This is another paragraph with *italic* text and `code` here\nThis is the same paragraph on a new line",
+            "This is another paragraph with _italic_ text and `code` here\nThis is the same paragraph on a new line",
             """```\ndef test_empty_input(self):\n    text = ""\n    expected = []\n    self.assertEqual(mf.markdown_to_blocks(text), expected)\n```""",
             "* This is a list\n* with items",
             "> This is a quote.",
@@ -322,7 +322,7 @@ class TestMarkdownToTextNode(unittest.TestCase):
 
     def test_paragraph_multi_line(self):
         text = """\
-This is another paragraph with *italic* text and `code` here
+This is another paragraph with _italic_ text and `code` here
 This is the same paragraph on a new line\
 """
         expected_nodes = [
@@ -342,7 +342,7 @@ This is the same paragraph on a new line\
         self.assertEqual(mf.markdown_heading_to_text_node(text=text), expected_nodes)
 
     def test_heading_italic_h2(self):
-        text = "## *heading2*"
+        text = "## _heading2_"
         expected_nodes = [TextNode("heading2", tf.TEXT_TYPE_ITALIC)]
         self.assertEqual(mf.markdown_heading_to_text_node(text=text), expected_nodes)
 
@@ -367,7 +367,7 @@ This is the same paragraph on a new line\
         self.assertEqual(mf.markdown_heading_to_text_node(text=text), expected_nodes)
 
     def test_quote_single_line(self):
-        text = "> This is *italic* **bold** word"
+        text = "> This is _italic_ **bold** word"
         expected_nodes = [
             TextNode("This is ", tf.TEXT_TYPE_TEXT),
             TextNode("italic", tf.TEXT_TYPE_ITALIC),
@@ -378,7 +378,7 @@ This is the same paragraph on a new line\
         self.assertEqual(mf.markdown_quote_to_text_node(text=text), expected_nodes)
 
     def test_quote_multi_line(self):
-        text = "> This is *italic* **bold** word\n> \n> `codeblock`"
+        text = "> This is _italic_ **bold** word\n> \n> `codeblock`"
         expected_nodes = [
             TextNode("This is ", tf.TEXT_TYPE_TEXT),
             TextNode("italic", tf.TEXT_TYPE_ITALIC),
@@ -472,7 +472,7 @@ class TestMarkdownToHtmlNode(unittest.TestCase):
 
     def test_markdown_to_html_paragraph_multi_line(self):
         text = """\
-This is another paragraph with *italic* text and `code` here
+This is another paragraph with _italic_ text and `code` here
 This is the same paragraph on a new line\
 """
         expected = ParentNode(
@@ -526,7 +526,7 @@ This is the same paragraph on a new line\
         self.assertEqual(mf.markdown_to_html_node(text=text).to_html(), expected)
 
     def test_markdown_to_html_quote(self):
-        text = "> This is *italic* **bold** word\n> This also has >\n> `codeblock`"
+        text = "> This is _italic_ **bold** word\n> This also has >\n> `codeblock`"
         expected = ParentNode(
             children=[
                 ParentNode(
@@ -546,7 +546,7 @@ This is the same paragraph on a new line\
         self.assertEqual(mf.markdown_to_html_node(text=text).to_html(), expected)
 
     def test_markdown_to_html_unord_list(self):
-        text = "* **bold** item1\n* *italic_item2*\n* item3"
+        text = "* **bold** item1\n* _italic-item2_\n* item3"
         expected = ParentNode(
             children=[
                 ParentNode(
@@ -560,7 +560,7 @@ This is the same paragraph on a new line\
                         ),
                         ParentNode(
                             children=[
-                                LeafNode(value="italic_item2", tag="i"),
+                                LeafNode(value="italic-item2", tag="i"),
                             ],
                             tag="li",
                         ),
@@ -574,7 +574,7 @@ This is the same paragraph on a new line\
         self.assertEqual(mf.markdown_to_html_node(text=text).to_html(), expected)
 
     def test_markdown_to_html_ord_list(self):
-        text = "1. **bold** item1\n2. *italic_item2*\n3. item3"
+        text = "1. **bold** item1\n2. _italic-item2_\n3. item3"
         expected = ParentNode(
             children=[
                 ParentNode(
@@ -588,7 +588,7 @@ This is the same paragraph on a new line\
                         ),
                         ParentNode(
                             children=[
-                                LeafNode(value="italic_item2", tag="i"),
+                                LeafNode(value="italic-item2", tag="i"),
                             ],
                             tag="li",
                         ),

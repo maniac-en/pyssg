@@ -18,7 +18,7 @@
     - Inline blocks:<br><br>
     ```
     - Bold      -> **bold**
-    - Italic    -> *italic*
+    - Italic    -> _italic_
     - Codeblock -> `code`
     - Link      -> [text](link)
     - Image     -> ![alt-text](src-link)

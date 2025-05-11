@@ -120,14 +120,14 @@ class TestSplitNodes(unittest.TestCase):
     def test_with_nested_bold_delimiters(self):
         nodes = [
             TextNode(
-                text="This is an *italic and **bold** word*.",
+                text="This is an _italic and **bold** word_.",
                 text_type=tf.TEXT_TYPE_TEXT,
             )
         ]
         expected_nodes = [
-            TextNode(text="This is an *italic and ", text_type=tf.TEXT_TYPE_TEXT),
+            TextNode(text="This is an _italic and ", text_type=tf.TEXT_TYPE_TEXT),
             TextNode(text="bold", text_type=tf.TEXT_TYPE_BOLD),
-            TextNode(text=" word*.", text_type=tf.TEXT_TYPE_TEXT),
+            TextNode(text=" word_.", text_type=tf.TEXT_TYPE_TEXT),
         ]
         self.assertEqual(
             tf.split_nodes_delimiter(nodes, "**", tf.TEXT_TYPE_BOLD), expected_nodes
@@ -296,7 +296,7 @@ class TestTextToTextNode(unittest.TestCase):
         self.assertEqual(tf.text_line_to_text_nodes(text), expected)
 
     def test_italic_text(self):
-        text = "This is *italic* text."
+        text = "This is _italic_ text."
         expected = [
             TextNode(text="This is ", text_type=tf.TEXT_TYPE_TEXT),
             TextNode(text="italic", text_type=tf.TEXT_TYPE_ITALIC),
@@ -345,7 +345,7 @@ class TestTextToTextNode(unittest.TestCase):
         self.assertEqual(tf.text_line_to_text_nodes(text), expected)
 
     def test_combined_markdown(self):
-        text = "This is **bold** and *italic* with a [link](http://example.com) and an ![image](http://example.com/image.jpg)."
+        text = "This is **bold** and _italic_ with a [link](http://example.com) and an ![image](http://example.com/image.jpg)."
         expected = [
             TextNode(text="This is ", text_type=tf.TEXT_TYPE_TEXT),
             TextNode(text="bold", text_type=tf.TEXT_TYPE_BOLD),
