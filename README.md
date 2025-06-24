@@ -1,5 +1,7 @@
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/maniac-en/pyssg/pytest.yml)
 
+> See the live demo here: https://maniac-en.github.io/pyssg/
+
 # pyssg
 
 - `pyssg` is a toy-project written in Python (v3.10.12) implementing the functionality like a [SSG](https://en.wikipedia.org/wiki/Static_site_generator).
